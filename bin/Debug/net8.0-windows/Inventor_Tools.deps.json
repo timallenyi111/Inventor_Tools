@@ -1,0 +1,52 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Inventor_Tools/1.0.0": {
+        "dependencies": {
+          "Autodesk.Inventor.Interop": "30.10.23300.0"
+        },
+        "runtime": {
+          "Inventor_Tools.dll": {}
+        }
+      },
+      "Autodesk.Inventor.Interop/30.10.23300.0": {
+        "runtime": {
+          "Autodesk.Inventor.Interop.dll": {
+            "assemblyVersion": "30.10.23300.0",
+            "fileVersion": "30.10.23300.0"
+          }
+        }
+      },
+      "stdole/7.0.3300.0": {
+        "runtime": {
+          "stdole.dll": {
+            "assemblyVersion": "7.0.3300.0",
+            "fileVersion": "7.0.9466.1"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Inventor_Tools/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Autodesk.Inventor.Interop/30.10.23300.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "stdole/7.0.3300.0": {
+      "type": "reference",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
