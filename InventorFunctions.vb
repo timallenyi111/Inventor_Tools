@@ -80,46 +80,173 @@ Module InventorFunctions
 
     Function GetComponentName(ByRef occ As Inventor.Document) As String
         Dim compName As String = occ.DisplayName
-        compName = compName.Substring(0, compName.LastIndexOf("."))
+        ' DB(compName)
+        ' DB(occ.SubType.ToString)
+        If compName.Contains(".") Then
+            compName = compName.Substring(0, compName.LastIndexOf("."))
+        End If
         Return compName
     End Function
 
-    Function SetupAssemblyObj(ByRef asmDoc As Inventor.AssemblyDocument, invtAsmFile As InvtAssemblyObj) As InvtAssemblyObj
-        invtAsmFile.FileName = GetAssemblyFileName(asmDoc)
-        invtAsmFile.Name = GetComponentName(asmDoc)
+    Function CheckIfComponentIsImported(ByRef occ As Inventor.ComponentOccurrence) As Boolean
+        Dim isImported As Boolean = False
+        If occ.DefinitionDocumentType = DocumentTypeEnum.kPartDocumentObject Then
+            Dim partDoc As Inventor.PartDocument = occ.Definition.Document
+
+            DB(partDoc.SubType.ToString)
+            If partDoc.SubType = "Imported" Then
+                isImported = True
+            End If
+
+        ElseIf occ.DefinitionDocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
+            Dim asmDoc As Inventor.AssemblyDocument = occ.Definition.Document
+            Dim count As Long = asmDoc.ReferencedDocumentDescriptors.Count()
+            Dim countInt As Integer = CInt(count)
+            DB(GetComponentName(asmDoc))
+            Debug.Print("Referenced Assembly Count: " & countInt)
+            DB("----")
+        End If
+        Return isImported
+    End Function
+
+    Function CheckIfDuplicateComponent(ByRef occ As Inventor.ComponentOccurrence, ByRef compFileNames As List(Of String)) As Boolean
+        Dim isDuplicate As Boolean = False
+        Dim curDoc As Inventor.Document = occ.Definition.Document
+        Dim curFileName As String = curDoc.FullFileName
+        If compFileNames.Contains(curFileName) Then
+            isDuplicate = True
+        End If
+        Return isDuplicate
+    End Function
+
+    Function CheckIfFrame(ByRef asmDoc As AssemblyDocument) As Boolean
+        Dim isFrame As Boolean = False
+        Dim occ As Inventor.ComponentOccurrence
+        For Each occ In asmDoc.ComponentDefinition.Occurrences
+            If GetComponentName(occ.Definition.Document).ToLower.Contains("skeleton") Then
+                isFrame = True
+                DB("Frame found: " & GetComponentName(asmDoc))
+                Dim skeletonDoc As Inventor.PartDocument = occ.Definition.Document
+                DB("Referenced Document Count: " & asmDoc.ReferencedDocumentDescriptors.Count)
+                Dim refDoc As Inventor.Document
+                Dim fileName As String
+                For Each refDoc In asmDoc.ReferencingDocuments
+                    fileName = refDoc.FullFileName
+                    fileName = fileName.Substring(fileName.LastIndexOf("\") + 1)
+                    DB("   Ref: " & fileName)
+                Next
+
+            End If
+        Next
+
+        Return isFrame
+    End Function
+
+    Function SetupAssemblyObj(ByRef asmDoc As Inventor.AssemblyDocument, invtAsmObj As InvtAssemblyObj) As InvtAssemblyObj
+        invtAsmObj.FileName = GetAssemblyFileName(asmDoc)
+        invtAsmObj.Name = GetComponentName(asmDoc)
+
         Dim asmCompDef As Inventor.AssemblyComponentDefinition = GetAssemblyComponentDefinition(asmDoc)
-        invtAsmFile.AssemblyComponentDefinition = asmCompDef
-        invtAsmFile.ComponentNames = GetListOfComponentNames(asmCompDef)
-        For Each occ As Inventor.ComponentOccurrence In GetListOfAssmblyOccurrences(asmCompDef)
+        invtAsmObj.AssemblyComponentDefinition = asmCompDef
+        invtAsmObj.ComponentNames = GetListOfComponentNames(asmCompDef)
+
+        For Each occ As Inventor.ComponentOccurrence In asmCompDef.Occurrences
+
             If occ.DefinitionDocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
-                If invtAsmFile.AssemblyNames.Contains(GetComponentName(occ.Definition.Document)) Then
+                Dim curAsmDoc As Inventor.AssemblyDocument = occ.Definition.Document
+                CheckIfFrame(curAsmDoc)
+                If invtAsmObj.AssemblyNames.Contains(GetComponentName(occ.Definition.Document)) Then
                     'do nothing, already in the list
+
                 Else
                     Dim subAsmFile As New InvtAssemblyObj
                     Dim subAsmDoc As Inventor.AssemblyDocument = occ.Definition.Document
+
                     subAsmFile = SetupAssemblyObj(subAsmDoc, subAsmFile)
-                    invtAsmFile.SubAssemblyObjectList.Add(subAsmFile)
-                    invtAsmFile.AssemblyNames.Add(subAsmFile.Name)
+                    invtAsmObj.SubAssemblyObjectList.Add(subAsmFile)
+                    invtAsmObj.AssemblyNames.Add(subAsmFile.Name)
                 End If
+
             ElseIf occ.DefinitionDocumentType = DocumentTypeEnum.kPartDocumentObject Then
-                If invtAsmFile.PartNames.Contains(GetComponentName(occ.Definition.Document)) Then
+                If invtAsmObj.PartNames.Contains(GetComponentName(occ.Definition.Document)) Then
                     'do nothing, already in the list
                 Else
                     Dim partObj As New InvtPartObj
                     partObj = SetupPartObject(occ.Definition.Document)
-                    invtAsmFile.PartNames.Add(partObj.Name)
+                    invtAsmObj.PartNames.Add(partObj.Name)
                 End If
             Else
+                DB("Unknown document type: " & occ.DefinitionDocumentType.ToString)
                 Continue For
             End If
 
         Next
-        Return invtAsmFile
+        Return invtAsmObj
     End Function
 
+    Function AssemblyObjSetup(ByRef asmDoc As Inventor.AssemblyDocument, invtAsmObj As InvtAssemblyObj) As InvtAssemblyObj
+        invtAsmObj.FileName = asmDoc.FullFileName
+        invtAsmObj.Name = GetComponentName(asmDoc)
+
+        Dim asmCompDef As Inventor.AssemblyComponentDefinition = GetAssemblyComponentDefinition(asmDoc)
+        invtAsmObj.AssemblyComponentDefinition = asmCompDef
+
+        For Each occ As Inventor.ComponentOccurrence In asmCompDef.Occurrences
+            Dim occDoc As Inventor.Document = occ.Definition.Document
+
+            If invtAsmObj.CheckIfComponentExists(occDoc.FullFileName, 1) Then
+                ' do nothing because we already added to the quantity
+
+                ' invtAsmObj.AddComponentQty(occDoc.FullFileName, 1)
+
+            Else
+                ' invtAsmObj.ComponentNames.Add(GetComponentName(occDoc))
+                Dim curCompObj As New InvtComponentObj
+                curCompObj.Name = GetComponentName(occ.Definition.Document)
+                curCompObj.FileName = occDoc.FullFileName
+
+                If occ.DefinitionDocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
+                    curCompObj.Type = "Assembly"
+
+                    Dim curAsmDoc As Inventor.AssemblyDocument = occ.Definition.Document
+
+                    Dim subAsmObj As New InvtAssemblyObj
+                    Dim subAsmDoc As Inventor.AssemblyDocument = occ.Definition.Document
+
+                    subAsmObj = AssemblyObjSetup(subAsmDoc, subAsmObj)
+
+                    curCompObj.AssemblyObject = subAsmObj
+
+                    invtAsmObj.AssemblyComponents.Add(curCompObj)
+                    'invtAsmObj.SubAssemblyObjectList.Add(subAsmObj)
+                    'invtAsmObj.AssemblyNames.Add(subAsmObj.compName)
+
+
+                ElseIf occ.DefinitionDocumentType = DocumentTypeEnum.kPartDocumentObject Then
+                    curCompObj.Type = "Part"
+
+                    Dim partObj As New InvtPartObj
+                    partObj = SetupPartObject(occ.Definition.Document)
+                    partObj.Name = GetComponentName(occ.Definition.Document)
+
+                    curCompObj.PartObject = partObj
+
+                    invtAsmObj.AssemblyComponents.Add(curCompObj)
+
+                Else
+                    DB("Unknown document type: " & occ.DefinitionDocumentType.ToString)
+                    Continue For
+                End If
+            End If
+
+
+        Next
+
+        Return invtAsmObj
+    End Function
     Function SetupPartObject(ByRef partDoc As Inventor.PartDocument) As InvtPartObj
         Dim invtPartObj As New InvtPartObj
-        invtPartObj.Name = partDoc.ComponentDefinition.Name
+        invtPartObj.Name = GetComponentName(partDoc)
         Return invtPartObj
     End Function
 
@@ -133,12 +260,12 @@ Module InventorFunctions
     Sub AddSubNodes(ByRef parentNode As TreeNode, ByRef asmObj As InvtAssemblyObj)
         Dim asmNode As TreeNode
         Dim partNode As TreeNode
-        For Each subAsm As InvtAssemblyObj In asmObj.SubAssemblyObjectList
-            asmNode = parentNode.Nodes.Add(subAsm.Name)
-            AddSubNodes(asmNode, subAsm)
-        Next
-        For Each partName As String In asmObj.PartNames
-            partNode = parentNode.Nodes.Add(partName)
+        Dim newNode As TreeNode
+        For Each comp As InvtComponentObj In asmObj.AssemblyComponents
+            newNode = parentNode.Nodes.Add(comp.Name & " | qty: " & comp.Quantity.ToString)
+            If comp.Type = "Assembly" Then
+                AddSubNodes(newNode, comp.AssemblyObject)
+            End If
         Next
     End Sub
 

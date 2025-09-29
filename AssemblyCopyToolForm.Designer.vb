@@ -27,6 +27,7 @@ Partial Class AssemblyCopyToolForm
         ProjDirTB = New TextBox()
         FileNameTB = New TextBox()
         oComponent_TV = New TreeView()
+        nComponent_TV = New TreeView()
         SuspendLayout()
         ' 
         ' Label1
@@ -67,22 +68,33 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' oComponent_TV
         ' 
-        oComponent_TV.Location = New Point(104, 192)
+        oComponent_TV.BorderStyle = BorderStyle.FixedSingle
+        oComponent_TV.Location = New Point(25, 150)
         oComponent_TV.Name = "oComponent_TV"
-        oComponent_TV.Size = New Size(372, 691)
+        oComponent_TV.Size = New Size(662, 700)
         oComponent_TV.TabIndex = 6
+        ' 
+        ' nComponent_TV
+        ' 
+        'nComponent_TV.Anchor = AnchorStyles.Top Or AnchorStyles.Right
+        nComponent_TV.BorderStyle = BorderStyle.FixedSingle
+        nComponent_TV.Location = New Point(712, 150)
+        nComponent_TV.Name = "nComponent_TV"
+        nComponent_TV.Size = New Size(662, 700)
+        nComponent_TV.TabIndex = 7
         ' 
         ' AssemblyCopyToolForm
         ' 
-        AutoScaleDimensions = New SizeF(12F, 29F)
+        AutoScaleDimensions = New SizeF(12.0F, 29.0F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(1238, 1291)
+        ClientSize = New Size(1400, 1400)
+        Controls.Add(nComponent_TV)
         Controls.Add(oComponent_TV)
         Controls.Add(FileNameTB)
         Controls.Add(ProjDirTB)
         Controls.Add(Label2)
         Controls.Add(Label1)
-        Font = New Font("Calibri", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        Font = New Font("Calibri", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         Margin = New Padding(3, 4, 3, 4)
         Name = "AssemblyCopyToolForm"
         Text = "Form1"
@@ -95,5 +107,6 @@ Partial Class AssemblyCopyToolForm
     Friend WithEvents ProjDirTB As TextBox
     Friend WithEvents FileNameTB As TextBox
     Friend WithEvents oComponent_TV As TreeView
+    Friend WithEvents nComponent_TV As TreeView
 
 End Class

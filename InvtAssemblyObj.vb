@@ -2,6 +2,7 @@
     Dim compDefs As List(Of Inventor.ComponentDefinition)
     Dim asmDef As Inventor.AssemblyComponentDefinition
     Dim asmObjList As List(Of InvtAssemblyObj)
+    Dim asmCompList As List(Of InvtComponentObj)
     Dim compNames As List(Of String)
     Dim asmNames As List(Of String)
     Dim prtNames As List(Of String)
@@ -15,6 +16,7 @@
         compNames = New List(Of String)()
         asmNames = New List(Of String)()
         prtNames = New List(Of String)()
+        asmCompList = New List(Of InvtComponentObj)()
     End Sub
 
     Property Name As String
@@ -97,5 +99,56 @@
             asmDef = value
         End Set
     End Property
+
+    Property AssemblyComponents As List(Of InvtComponentObj)
+        Get
+            Return asmCompList
+        End Get
+        Set(value As List(Of InvtComponentObj))
+            asmCompList = value
+        End Set
+    End Property
+
+    Function GetComponentByFileName(fName As String) As InvtComponentObj
+        Dim compObj As InvtComponentObj = Nothing
+        For Each comp As InvtComponentObj In asmCompList
+            If comp.FileName = fName Then
+                compObj = comp
+                Exit For
+            End If
+        Next
+        Return compObj
+    End Function
+
+    ''' <summary>
+    ''' Check if the component is already part of the assembly object list.
+    ''' addQty is optional and defaults to 0.
+    ''' If it exists and addQty is greater than 0, the quantity of the component will be increased by addQty.
+    ''' </summary>
+    ''' <param name="fName"></param>
+    ''' <param name="addQty"></param>
+    ''' <returns></returns>
+    Function CheckIfComponentExists(fName As String, Optional addQty As Integer = 0) As Boolean
+        Dim exists As Boolean = False
+        For Each comp As InvtComponentObj In asmCompList
+            If comp.FileName = fName Then
+                exists = True
+                If addQty > 0 Then
+                    comp.Quantity += addQty
+                End If
+                Exit For
+            End If
+        Next
+        Return exists
+    End Function
+
+    Sub AddComponentQty(fName As String, qtyToAdd As Integer)
+        For Each comp As InvtComponentObj In asmCompList
+            If comp.FileName = fName Then
+                comp.Quantity += qtyToAdd
+                Exit For
+            End If
+        Next
+    End Sub
 
 End Class

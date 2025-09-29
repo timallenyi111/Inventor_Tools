@@ -1,9 +1,10 @@
 ﻿Imports System
-Imports System.Type
 Imports System.Activator
-Imports System.Runtime.InteropServices
-Imports Inventor
 Imports System.Diagnostics
+Imports System.Runtime.InteropServices
+Imports System.Type
+Imports System.Windows.Forms.VisualStyles.VisualStyleElement
+Imports Inventor
 
 
 Friend Class AssemblyCopyToolForm
@@ -16,6 +17,8 @@ Friend Class AssemblyCopyToolForm
 
 	Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 		On Error Resume Next
+
+		FormLayoutSetup()
 
 		'get an active session of Inventor
 		_invApp = Win32.GetActiveObject("Inventor.Application")
@@ -34,22 +37,47 @@ Friend Class AssemblyCopyToolForm
 		On Error GoTo 0
 
 		projectDir = GetProjectDirectory(_invApp)
-        ProjDirTB.Text = projectDir
+		ProjDirTB.Text = projectDir
 
 		oAsmFileName = GetAssemblyFileName(oAsmDoc)
 		FileNameTB.Text = oAsmFileName
 
-        oAsmCompDef = oAsmDoc.ComponentDefinition
+		oAsmCompDef = oAsmDoc.ComponentDefinition
 
 		DB(oAsmDoc.DisplayName)
 
 		Dim mainAsmObj As New InvtAssemblyObj
-        mainAsmObj = SetupAssemblyObj(oAsmDoc, mainAsmObj)
+		mainAsmObj = AssemblyObjSetup(oAsmDoc, mainAsmObj)
 
-		Dim oTreeView As New TreeView
-		oTreeView = oComponent_TV
-		SetupTreeView(oTreeView, mainAsmObj)
+		' Dim oTreeView As TreeView
+		Dim oTreeView = oComponent_TV
+        SetupTreeView(oTreeView, mainAsmObj)
 
+        Dim newAsmObj As New InvtAssemblyObj
+		newAsmObj = AssemblyObjSetup(oAsmDoc, newAsmObj)
+
+		Dim nTreeView = nComponent_TV
+        SetupTreeView(nTreeView, newAsmObj)
+
+
+    End Sub
+
+    Private Sub AssemblyCopyToolForm_Resize(sender As Object, e As EventArgs) Handles Me.Resize
+        FormLayoutSetup()
+    End Sub
+
+    Private Sub FormLayoutSetup()
+		Dim tv_gap As Integer = Me.ClientSize.Width * 0.01
+		Dim tv_width As Integer = (Me.ClientSize.Width - (tv_gap * 3)) / 2
+		oComponent_TV.Width = CInt(tv_width)
+        nComponent_TV.Width = CInt(tv_width)
+
+		Dim tv_height As Integer = Me.ClientSize.Height * 0.5
+		oComponent_TV.Height = CInt(tv_height)
+        nComponent_TV.Height = CInt(tv_height)
+
+        oComponent_TV.Left = CInt(tv_gap)
+        nComponent_TV.Left = CInt(tv_width + tv_gap * 2)
 
 	End Sub
 End Class
