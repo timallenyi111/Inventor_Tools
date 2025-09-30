@@ -56,6 +56,17 @@ Module InventorFunctions
         Return asmOccs
     End Function
 
+    Function AddPrefixSuffix(ByRef fileName As String, Optional prefix As String = "", Optional ByRef suffix As String = "") As String
+        ''' Adds a suffix to the file name before the file extension
+        Dim newFileName As String = prefix & fileName
+        If fileName.Contains(".") Then
+            newFileName = fileName.Substring(0, fileName.LastIndexOf(".")) & suffix & fileName.Substring(fileName.LastIndexOf("."))
+        Else
+            newFileName = fileName & suffix
+        End If
+        Return newFileName
+    End Function
+
     Function GetListOfPartOccurrences(ByRef asmCompDef As Inventor.ComponentDefinition) As List(Of Inventor.ComponentOccurrence)
         ''' Returns a list of part occurrences in the given assembly component definition (deletes duplicates)
         Dim partOccs As New List(Of Inventor.ComponentOccurrence)
@@ -76,6 +87,12 @@ Module InventorFunctions
             displayNames.Add(oOcc.Name)
         Next
         Return displayNames
+    End Function
+
+    Function GetFilePath(ByRef occ As Inventor.Document) As String
+        Dim filePath As String = occ.FullFileName
+        filePath = filePath.Substring(0, filePath.LastIndexOf("\") + 1)
+        Return filePath
     End Function
 
     Function GetComponentName(ByRef occ As Inventor.Document) As String
@@ -143,8 +160,9 @@ Module InventorFunctions
     End Function
 
     Function AssemblyObjSetup(ByRef asmDoc As Inventor.AssemblyDocument, invtAsmObj As InvtAssemblyObj) As InvtAssemblyObj
-        invtAsmObj.FileName = asmDoc.FullFileName
-        invtAsmObj.Name = GetComponentName(asmDoc)
+        invtAsmObj.OriginalFileName = asmDoc.FullFileName
+        invtAsmObj.OriginalFilePath = GetFilePath(asmDoc)
+        invtAsmObj.OriginalName = GetComponentName(asmDoc)
         invtAsmObj.AssemblyDocument = asmDoc
 
         Dim asmCompDef As Inventor.AssemblyComponentDefinition = GetAssemblyComponentDefinition(asmDoc)
@@ -180,7 +198,8 @@ Module InventorFunctions
 
                     Dim partObj As New InvtPartObj
                     partObj = SetupPartObject(occ.Definition.Document)
-                    partObj.Name = GetComponentName(occ.Definition.Document)
+                    partObj.OriginalName = GetComponentName(occ.Definition.Document)
+                    partObj.OriginalFilePath = GetFilePath(occDoc)
 
                     curCompObj.PartObject = partObj
 
@@ -197,29 +216,14 @@ Module InventorFunctions
 
         Return invtAsmObj
     End Function
+
     Function SetupPartObject(ByRef partDoc As Inventor.PartDocument) As InvtPartObj
         Dim invtPartObj As New InvtPartObj
-        invtPartObj.Name = GetComponentName(partDoc)
+        invtPartObj.OriginalName = GetComponentName(partDoc)
+        invtPartObj.OriginalFilePath = partDoc.FullFileName
+        invtPartObj.OriginalPartDocument = partDoc
+
         Return invtPartObj
     End Function
-
-    Sub SetupTreeView(ByRef treeView As TreeView, ByRef asmObj As InvtAssemblyObj)
-        treeView.Nodes.Clear()
-        Dim rootNode As TreeNode = treeView.Nodes.Add(asmObj.Name)
-        AddSubNodes(rootNode, asmObj)
-        treeView.ExpandAll()
-    End Sub
-
-    Sub AddSubNodes(ByRef parentNode As TreeNode, ByRef asmObj As InvtAssemblyObj)
-        Dim asmNode As TreeNode
-        Dim partNode As TreeNode
-        Dim newNode As TreeNode
-        For Each comp As InvtComponentObj In asmObj.AssemblyComponents
-            newNode = parentNode.Nodes.Add(comp.Name & " | qty: " & comp.Quantity.ToString)
-            If comp.Type = "Assembly" Then
-                AddSubNodes(newNode, comp.AssemblyObject)
-            End If
-        Next
-    End Sub
 
 End Module

@@ -58,7 +58,7 @@
 
     ''' <summary>
     ''' The complete file name of the component
-    ''' Example: **path**\***assembly Name ***.iam
+    ''' Example: **path**\***assembly OriginalName ***.iam
     ''' </summary>
     ''' <returns></returns>
     Property FileName As String

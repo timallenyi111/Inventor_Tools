@@ -16,7 +16,7 @@ Imports System.Reflection
 <Assembly: System.Reflection.AssemblyCompanyAttribute("Inventor_Tools"),  _
  Assembly: System.Reflection.AssemblyConfigurationAttribute("Debug"),  _
  Assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0"),  _
- Assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ea0bbe53a4d2185e5ce8d8d0e3fdc6b14ef5be99"),  _
+ Assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0d57a32917796db34c928e21d4d4aacc50c27be0"),  _
  Assembly: System.Reflection.AssemblyProductAttribute("Inventor_Tools"),  _
  Assembly: System.Reflection.AssemblyTitleAttribute("Inventor_Tools"),  _
  Assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0"),  _

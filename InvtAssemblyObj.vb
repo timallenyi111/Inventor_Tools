@@ -1,26 +1,22 @@
 ﻿Public Class InvtAssemblyObj
     Dim compDefs As List(Of Inventor.ComponentDefinition)
     Dim asmDef As Inventor.AssemblyComponentDefinition
-    Dim asmObjList As List(Of InvtAssemblyObj)
     Dim asmCompList As List(Of InvtComponentObj)
-    Dim compNames As List(Of String)
-    Dim asmNames As List(Of String)
-    Dim prtNames As List(Of String)
     Dim asmDoc As Inventor.AssemblyDocument
     Dim assmName As String
-    Dim assmFileName As String
-    Dim assmFilePath As String
+    Dim oFileName As String
+    Dim oFilePath As String
+    Dim nName As String
+    Dim nFileName As String
+    Dim nFilePath As String
+    Dim nFullFileName As String
 
     Public Sub New()
         compDefs = New List(Of Inventor.ComponentDefinition)()
-        asmObjList = New List(Of InvtAssemblyObj)()
-        compNames = New List(Of String)()
-        asmNames = New List(Of String)()
-        prtNames = New List(Of String)()
         asmCompList = New List(Of InvtComponentObj)()
     End Sub
 
-    Property Name As String
+    Property OriginalName As String
         Get
             Return assmName
         End Get
@@ -29,12 +25,12 @@
         End Set
     End Property
 
-    Property FileName As String
+    Property OriginalFileName As String
         Get
-            Return assmFileName
+            Return oFileName
         End Get
         Set(value As String)
-            assmFileName = value
+            oFileName = value
         End Set
     End Property
 
@@ -47,48 +43,12 @@
         End Set
     End Property
 
-    Property FilePath As String
+    Property OriginalFilePath As String
         Get
-            Return assmFilePath
+            Return oFilePath
         End Get
         Set(value As String)
-            assmFilePath = value
-        End Set
-    End Property
-
-    Property ComponentNames As List(Of String)
-        Get
-            Return compNames
-        End Get
-        Set(value As List(Of String))
-            compNames = value
-        End Set
-    End Property
-
-    Property SubAssemblyObjectList As List(Of InvtAssemblyObj)
-        Get
-            Return asmObjList
-        End Get
-        Set(value As List(Of InvtAssemblyObj))
-            asmObjList = value
-        End Set
-    End Property
-
-    Property AssemblyNames As List(Of String)
-        Get
-            Return asmNames
-        End Get
-        Set(value As List(Of String))
-            asmNames = value
-        End Set
-    End Property
-
-    Property PartNames As List(Of String)
-        Get
-            Return prtNames
-        End Get
-        Set(value As List(Of String))
-            prtNames = value
+            oFilePath = value
         End Set
     End Property
 
@@ -117,6 +77,43 @@
         Set(value As Inventor.AssemblyDocument)
             asmDoc = value
         End Set
+    End Property
+
+    Property NewName As String
+        Get
+            Return nName
+        End Get
+        Set(value As String)
+            nName = value
+            NewFileName = nName & ".iam"
+        End Set
+    End Property
+
+    Property NewFileName As String
+        Get
+            Return nFileName
+        End Get
+        Set(value As String)
+            nFileName = value
+        End Set
+    End Property
+
+    Property NewFilePath As String
+        Get
+            Return nFilePath
+        End Get
+        Set(value As String)
+            nFilePath = value
+        End Set
+    End Property
+
+    ReadOnly Property NewFullFileName As String
+        Get
+            Return nFilePath & nFileName
+        End Get
+        'Set(value As String)
+        '    nFullFileName = value
+        'End Set
     End Property
 
     ''' <summary>
@@ -158,6 +155,13 @@
         Return exists
     End Function
 
+
+
+    ''' <summary>
+    ''' Increases the quantity of the component by qtyToAdd.
+    ''' </summary>
+    ''' <param name="fName"></param>
+    ''' <param name="qtyToAdd"></param>
     Sub AddComponentQty(fName As String, qtyToAdd As Integer)
         For Each comp As InvtComponentObj In asmCompList
             If comp.FileName = fName Then
