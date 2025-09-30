@@ -6,6 +6,7 @@
     Dim compNames As List(Of String)
     Dim asmNames As List(Of String)
     Dim prtNames As List(Of String)
+    Dim asmDoc As Inventor.AssemblyDocument
     Dim assmName As String
     Dim assmFileName As String
     Dim assmFilePath As String
@@ -109,6 +110,21 @@
         End Set
     End Property
 
+    Property AssemblyDocument As Inventor.AssemblyDocument
+        Get
+            Return asmDoc
+        End Get
+        Set(value As Inventor.AssemblyDocument)
+            asmDoc = value
+        End Set
+    End Property
+
+    ''' <summary>
+    ''' Returns the InvtComponentObj based on the file name.
+    ''' If not found, returns Nothing.
+    ''' </summary>
+    ''' <param name="fName"></param>
+    ''' <returns></returns>
     Function GetComponentByFileName(fName As String) As InvtComponentObj
         Dim compObj As InvtComponentObj = Nothing
         For Each comp As InvtComponentObj In asmCompList
