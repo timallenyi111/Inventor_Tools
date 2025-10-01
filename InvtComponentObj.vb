@@ -4,7 +4,7 @@
     Dim pObj As New InvtPartObj
     Dim aObj As New InvtAssemblyObj
     Dim qty As Integer
-    Dim fName As String
+    Dim oFileName As String
 
     Public Sub New()
         Name = ""
@@ -61,12 +61,12 @@
     ''' Example: **path**\***assembly OriginalName ***.iam
     ''' </summary>
     ''' <returns></returns>
-    Property FileName As String
+    Property OriginalFileName As String
         Get
-            Return fName
+            Return oFileName
         End Get
         Set(value As String)
-            fName = value
+            oFileName = value
         End Set
     End Property
 

@@ -11,10 +11,15 @@ Friend Class AssemblyCopyToolForm
     Inherits System.Windows.Forms.Form
     Public _invApp As Inventor.Application
     Public oAsmDoc As Inventor.AssemblyDocument
-    Dim newRootDirectory As String = ""
+    ''' <summary>
+    ''' this is currently the project directory of the assembly being copied plus the new assembly name
+    ''' as a subfolder
+    ''' </summary>
+    'Dim newRootDirectory As String = ""
     Dim mainAsmObj As New InvtAssemblyObj
-    Dim projectDir As String
-    Dim oAsmFileName As String
+    Dim newAsmObj As New InvtAssemblyObj
+    'Dim projectDir As String
+    'Dim oAsmFileName As String
     Dim oAsmCompDef As AssemblyComponentDefinition
     Dim newDirectory As String
 
@@ -41,43 +46,40 @@ Friend Class AssemblyCopyToolForm
 
         On Error GoTo 0
 
-        oAsmFileName = GetAssemblyFileName(oAsmDoc)
+        Dim oAsmFileName As String = GetAssemblyFileName(oAsmDoc)
+        Dim projectDir As String = GetProjectDirectory(_invApp)
+        Dim newAssemblyName As String = AddPrefixSuffix(GetComponentName(oAsmDoc), "", defaultSuffix)
+        Dim newRootDirectory As String = projectDir & newAssemblyName & "\"
+
         TB_FileName.Text = oAsmFileName
-
-        ' by default the new assembly body is the original assembly name
         TB_NewAssemblyName.Text = GetComponentName(oAsmDoc)
-        ' put the default suffix in the TB and then make the new assembly name
         TB_Suffix.Text = defaultSuffix
-        Dim newAssemblyName As String = AddPrefixSuffix(TB_NewAssemblyName.Text, TB_Prefix.Text, TB_Suffix.Text)
         Label_NewAssmName.Text = "  :  " & newAssemblyName
-
-        'setup the initial new directory and filename based on the current project directory
-        'and default suffix
-        projectDir = GetProjectDirectory(_invApp)
-        newRootDirectory = projectDir & newAssemblyName & "\"
         LongTextboxWrite(TB_ProjDir, projectDir)
         LongTextboxWrite(TB_newDir, newRootDirectory)
 
         mainAsmObj.NewFilePath = newRootDirectory
         mainAsmObj.NewName = newAssemblyName
 
-        'setup the form layout after assigning values
+        ' setup the form layout after assigning values
         FormLayoutSetup(True)
 
         oAsmCompDef = oAsmDoc.ComponentDefinition
 
-
         mainAsmObj = AssemblyObjSetup(oAsmDoc, mainAsmObj)
+        mainAsmObj.NewName = newAssemblyName
 
-        ' Dim oTreeView As TreeView
+        ' setup the original assembly object tree view
         Dim oTreeView = TV_oComponent
-        SetupTreeView(oTreeView, mainAsmObj)
+        SetupTreeView(oTreeView, mainAsmObj, False)
 
-        Dim newAsmObj As New InvtAssemblyObj
-        newAsmObj = AssemblyObjSetup(oAsmDoc, newAsmObj)
+        ' setup the new assembly object
+        ' to start the new assembly is a copy of the original
+        ' newAsmObj = AssemblyObjSetup(oAsmDoc, newAsmObj)
+        ' newAsmObj.OriginalName = 
 
         Dim nTreeView = TV_nComponent
-        SetupTreeView(nTreeView, newAsmObj)
+        SetupTreeView(nTreeView, mainAsmObj, True)
 
 
     End Sub
@@ -206,18 +208,19 @@ Friend Class AssemblyCopyToolForm
     End Sub
 
     Private Sub PrefixTB_TextChanged(sender As Object, e As EventArgs) Handles TB_Prefix.TextChanged
-        UpdateNewAssemblyName()
+        UpdateMainAssemblyNewName()
     End Sub
 
     Private Sub TB_NewAssemblyName_TextChanged(sender As Object, e As EventArgs) Handles TB_NewAssemblyName.TextChanged
-        UpdateNewAssemblyName()
+        UpdateMainAssemblyNewName()
     End Sub
 
     Private Sub TB_Suffix_TextChanged(sender As Object, e As EventArgs) Handles TB_Suffix.TextChanged
-        UpdateNewAssemblyName()
+        UpdateMainAssemblyNewName()
     End Sub
 
-    Private Sub UpdateNewAssemblyName()
+    Private Sub UpdateMainAssemblyNewName()
+        Dim newRootDirectory As String = TB_newDir.Text
         If newRootDirectory = "" Then
             'this happens on initial load
         Else
@@ -229,6 +232,7 @@ Friend Class AssemblyCopyToolForm
             newRootDirectory = dirString
             TB_newDir.Text = newRootDirectory
             mainAsmObj.NewName = newName
+            mainAsmObj.NewTreeNode.Text = newName
             mainAsmObj.NewFilePath = newRootDirectory
             ResetCarets()
         End If
@@ -236,31 +240,56 @@ Friend Class AssemblyCopyToolForm
     End Sub
 
     Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
-        SaveAssemblyFile(mainAsmObj)
+        SetupFilePaths(mainAsmObj, mainAsmObj.NewFilePath)
+        CopyAssemblyFile(mainAsmObj)
+        Dim newAssemblyDocument As AssemblyDocument = _invApp.Documents.Open(mainAsmObj.NewFullFileName)
+        ReplaceAssemblyComponents(mainAsmObj, newAssemblyDocument, True)
     End Sub
 
-    Sub SetupTreeView(ByRef treeView As System.Windows.Forms.TreeView, ByRef asmObj As InvtAssemblyObj)
+    Sub SetupTreeView(ByRef treeView As System.Windows.Forms.TreeView, ByRef asmObj As InvtAssemblyObj, ByRef newAsm As Boolean)
         treeView.Nodes.Clear()
-        Dim rootNode As TreeNode = treeView.Nodes.Add(asmObj.OriginalName)
-        AddSubNodes(rootNode, asmObj)
+        Dim rootNode As TreeNode
+        If newAsm Then
+            rootNode = treeView.Nodes.Add(asmObj.NewName)
+            asmObj.NewTreeNode = rootNode
+        Else
+            rootNode = treeView.Nodes.Add(asmObj.OriginalName)
+        End If
+        AddSubNodes(rootNode, asmObj, newAsm)
         treeView.ExpandAll()
     End Sub
 
-    Sub AddSubNodes(ByRef parentNode As TreeNode, ByRef asmObj As InvtAssemblyObj)
+    Sub AddSubNodes(ByRef parentNode As TreeNode, ByRef asmObj As InvtAssemblyObj, ByRef newAsm As Boolean)
         Dim newNode As TreeNode
         For Each comp As InvtComponentObj In asmObj.AssemblyComponents
-            newNode = parentNode.Nodes.Add(comp.Name & " | qty: " & comp.Quantity.ToString)
+            'newNode = parentNode.Nodes.Add(comp.Name)
             If comp.Type = "Assembly" Then
-                AddSubNodes(newNode, comp.AssemblyObject)
+                If newAsm Then
+                    newNode = parentNode.Nodes.Add(comp.AssemblyObject.NewName)
+                    comp.AssemblyObject.NewTreeNode = newNode
+                Else
+                    newNode = parentNode.Nodes.Add(comp.AssemblyObject.OriginalName)
+                End If
+
+                AddSubNodes(newNode, comp.AssemblyObject, newAsm)
+
+            ElseIf comp.Type = "Part" Then
+                If newAsm Then
+                    newNode = parentNode.Nodes.Add(comp.PartObject.NewName)
+                    comp.PartObject.NewTreeNode = newNode
+                Else
+                    newNode = parentNode.Nodes.Add(comp.PartObject.OriginalName)
+                End If
+
             End If
         Next
     End Sub
+
 
     Private Sub ResetCarets()
         MoveCaret(TB_ProjDir)
         MoveCaret(TB_newDir)
     End Sub
-
 
 End Class
 

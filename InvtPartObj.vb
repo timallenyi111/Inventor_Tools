@@ -4,7 +4,9 @@
     Dim nPrtName As String
     Dim nFilePath As String
     Dim oPrtDoc As Inventor.PartDocument
+    Dim oFileName As String
     Dim nFileName As String
+    Dim tNode As New TreeNode
 
     Property OriginalName As String
         Get
@@ -12,6 +14,15 @@
         End Get
         Set(value As String)
             oPrtName = value
+        End Set
+    End Property
+
+    Property OriginalFullFileName As String
+        Get
+            Return oFileName
+        End Get
+        Set(value As String)
+            oFileName = value
         End Set
     End Property
 
@@ -58,6 +69,15 @@
         End Get
         Set(value As String)
             nFileName = value
+        End Set
+    End Property
+
+    Property NewTreeNode As TreeNode
+        Get
+            Return tNode
+        End Get
+        Set(value As TreeNode)
+            tNode = value
         End Set
     End Property
 

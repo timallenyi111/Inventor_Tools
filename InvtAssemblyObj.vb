@@ -2,7 +2,8 @@
     Dim compDefs As List(Of Inventor.ComponentDefinition)
     Dim asmDef As Inventor.AssemblyComponentDefinition
     Dim asmCompList As List(Of InvtComponentObj)
-    Dim asmDoc As Inventor.AssemblyDocument
+    Dim oAsmDoc As Inventor.AssemblyDocument
+    Dim nAsmDoc As Inventor.AssemblyDocument
     Dim assmName As String
     Dim oFileName As String
     Dim oFilePath As String
@@ -10,6 +11,7 @@
     Dim nFileName As String
     Dim nFilePath As String
     Dim nFullFileName As String
+    Dim tNode As New TreeNode
 
     Public Sub New()
         compDefs = New List(Of Inventor.ComponentDefinition)()
@@ -25,21 +27,12 @@
         End Set
     End Property
 
-    Property OriginalFileName As String
+    Property OriginalFullFileName As String
         Get
             Return oFileName
         End Get
         Set(value As String)
             oFileName = value
-        End Set
-    End Property
-
-    Property ComponentDefinitions As List(Of Inventor.ComponentDefinition)
-        Get
-            Return compDefs
-        End Get
-        Set(value As List(Of Inventor.ComponentDefinition))
-            compDefs = value
         End Set
     End Property
 
@@ -52,15 +45,6 @@
         End Set
     End Property
 
-    Property AssemblyComponentDefinition As Inventor.AssemblyComponentDefinition
-        Get
-            Return asmDef
-        End Get
-        Set(value As Inventor.AssemblyComponentDefinition)
-            asmDef = value
-        End Set
-    End Property
-
     Property AssemblyComponents As List(Of InvtComponentObj)
         Get
             Return asmCompList
@@ -70,15 +54,32 @@
         End Set
     End Property
 
-    Property AssemblyDocument As Inventor.AssemblyDocument
+    ''' <summary>
+    ''' The Inventor Assembly Document object.
+    ''' </summary>
+    ''' <returns></returns>
+    Property OriginalAssemblyDocument As Inventor.AssemblyDocument
         Get
-            Return asmDoc
+            Return oAsmDoc
         End Get
         Set(value As Inventor.AssemblyDocument)
-            asmDoc = value
+            oAsmDoc = value
         End Set
     End Property
 
+    Property NewAssemblyDocument As Inventor.AssemblyDocument
+        Get
+            Return nAsmDoc
+        End Get
+        Set(value As Inventor.AssemblyDocument)
+            nAsmDoc = value
+        End Set
+    End Property
+
+    ''' <summary>
+    ''' The name of the assembly without the file extension.
+    ''' </summary>
+    ''' <returns></returns> 
     Property NewName As String
         Get
             Return nName
@@ -107,13 +108,19 @@
         End Set
     End Property
 
+    Property NewTreeNode As TreeNode
+        Get
+            Return tNode
+        End Get
+        Set(value As TreeNode)
+            tNode = value
+        End Set
+    End Property
+
     ReadOnly Property NewFullFileName As String
         Get
             Return nFilePath & nFileName
         End Get
-        'Set(value As String)
-        '    nFullFileName = value
-        'End Set
     End Property
 
     ''' <summary>
@@ -122,10 +129,10 @@
     ''' </summary>
     ''' <param name="fName"></param>
     ''' <returns></returns>
-    Function GetComponentByFileName(fName As String) As InvtComponentObj
+    Function GetComponentByOriginalFileName(fName As String) As InvtComponentObj
         Dim compObj As InvtComponentObj = Nothing
         For Each comp As InvtComponentObj In asmCompList
-            If comp.FileName = fName Then
+            If comp.OriginalFileName = fName Then
                 compObj = comp
                 Exit For
             End If
@@ -144,7 +151,7 @@
     Function CheckIfComponentExists(fName As String, Optional addQty As Integer = 0) As Boolean
         Dim exists As Boolean = False
         For Each comp As InvtComponentObj In asmCompList
-            If comp.FileName = fName Then
+            If comp.OriginalFileName = fName Then
                 exists = True
                 If addQty > 0 Then
                     comp.Quantity += addQty
@@ -155,8 +162,6 @@
         Return exists
     End Function
 
-
-
     ''' <summary>
     ''' Increases the quantity of the component by qtyToAdd.
     ''' </summary>
@@ -164,7 +169,7 @@
     ''' <param name="qtyToAdd"></param>
     Sub AddComponentQty(fName As String, qtyToAdd As Integer)
         For Each comp As InvtComponentObj In asmCompList
-            If comp.FileName = fName Then
+            If comp.OriginalFileName = fName Then
                 comp.Quantity += qtyToAdd
                 Exit For
             End If
