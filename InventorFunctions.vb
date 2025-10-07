@@ -59,12 +59,12 @@ Module InventorFunctions
 
     Function SetupPartObject(ByRef partDoc As Inventor.PartDocument) As InvtPartObj
         Dim invtPartObj As New InvtPartObj
-        invtPartObj.OriginalName = GetComponentName(partDoc)
-        invtPartObj.OriginalFullFileName = partDoc.FullFileName
-        invtPartObj.OriginalFilePath = GetFilePath(partDoc)
-        invtPartObj.OriginalPartDocument = partDoc
+        'I'nvtPartObj.OriginalName = GetComponentName(partDoc)
+        'I'nvtPartObj.OriginalFullFileName = partDoc.FullFileName
+        'I'nvtPartObj.OriginalFilePath = GetFilePath(partDoc)
+        'InvtPartObj.OriginalPartDocument = partDoc
 
-        invtPartObj.NewName = invtPartObj.OriginalName
+        'InvtPartObj.NewName = invtPartObj.OriginalName
 
         Return invtPartObj
     End Function
@@ -231,7 +231,6 @@ Module InventorFunctions
 
         Return isFrame
     End Function
-
 
 
 End Module

@@ -123,12 +123,14 @@
         End Get
     End Property
 
+
     ''' <summary>
     ''' Returns the InvtComponentObj based on the file name.
     ''' If not found, returns Nothing.
     ''' </summary>
     ''' <param name="fName"></param>
     ''' <returns></returns>
+    ''' 
     Function GetComponentByOriginalFileName(fName As String) As InvtComponentObj
         Dim compObj As InvtComponentObj = Nothing
         For Each comp As InvtComponentObj In asmCompList

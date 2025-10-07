@@ -5,12 +5,17 @@ Imports System.Runtime.InteropServices
 Imports System.Type
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports Inventor
+Imports System.IO
 
 
 Friend Class AssemblyCopyToolForm
     Inherits System.Windows.Forms.Form
     Public _invApp As Inventor.Application
     Public oAsmDoc As Inventor.AssemblyDocument
+    Public _stream As FileStream
+    Public _writer As StreamWriter
+    Dim logPath As String = "C:\Users\Tim\source\repos\Inventor_Tools\LogFiles\"
+    Dim EnableLog As Boolean = True
     ''' <summary>
     ''' this is currently the project directory of the assembly being copied plus the new assembly name
     ''' as a subfolder
@@ -22,8 +27,9 @@ Friend Class AssemblyCopyToolForm
     'Dim oAsmFileName As String
     Dim oAsmCompDef As AssemblyComponentDefinition
     Dim newDirectory As String
-
+    Dim rootAssemblyObject As AssemblyCopyObject
     Dim defaultSuffix As String = "_2"
+    Dim defaultPrefix As String = ""
     Dim medium_gap As Integer = 10
     Dim labelRightEdge As Integer = 164
 
@@ -46,41 +52,80 @@ Friend Class AssemblyCopyToolForm
 
         On Error GoTo 0
 
-        Dim oAsmFileName As String = GetAssemblyFileName(oAsmDoc)
-        Dim projectDir As String = GetProjectDirectory(_invApp)
-        Dim newAssemblyName As String = AddPrefixSuffix(GetComponentName(oAsmDoc), "", defaultSuffix)
-        Dim newRootDirectory As String = projectDir & newAssemblyName & "\"
+        ' setup EnableLog file
+        If EnableLog Then
+            Dim timestamp As String = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")
+            Dim fileName As String = $"Log_{timestamp}.txt"
+            _stream = New FileStream(logPath & fileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read)
+            _writer = New StreamWriter(_stream)
+            _writer.AutoFlush = True
+        End If
 
-        TB_FileName.Text = oAsmFileName
-        TB_NewAssemblyName.Text = GetComponentName(oAsmDoc)
+
+        ' we have to set the default prefix and suffix textboxes before assembly object setup
+        ' because the assembly object setup references these values
+        TB_Prefix.Text = defaultPrefix
         TB_Suffix.Text = defaultSuffix
-        Label_NewAssmName.Text = "  :  " & newAssemblyName
-        LongTextboxWrite(TB_ProjDir, projectDir)
-        LongTextboxWrite(TB_newDir, newRootDirectory)
 
-        mainAsmObj.NewFilePath = newRootDirectory
-        mainAsmObj.NewName = newAssemblyName
+        rootAssemblyObject = New AssemblyCopyObject(Me, _invApp)
+        rootAssemblyObject.InitialSetup()
+
+        ' Dim oAsmFileName As String = GetAssemblyFileName(oAsmDoc)
+        ' Dim projectDir As String = GetProjectDirectory(_invApp)
+        ' Dim newAssemblyName As String = AddPrefixSuffix(GetComponentName(oAsmDoc), "", defaultSuffix)
+        ' Dim newRootDirectory As String = projectDir & newAssemblyName & "\"
+
+        TB_FileName.Text = rootAssemblyObject.OriginalName & ".iam"
+        ' by default the new assembly name is the same as the original
+        ' this is just the middle of the name not including prefix and suffix
+        TB_NewAssemblyName.Text = rootAssemblyObject.OriginalName
+
+        Label_NewAssmName.Text = "  :  " & rootAssemblyObject.NewName
+        LongTextboxWrite(TB_ProjDir, rootAssemblyObject.GetProjectDirectory(_invApp))
+        LongTextboxWrite(TB_newDir, rootAssemblyObject.NewRootDirectory)
 
         ' setup the form layout after assigning values
         FormLayoutSetup(True)
 
-        oAsmCompDef = oAsmDoc.ComponentDefinition
-
-        mainAsmObj = AssemblyObjSetup(oAsmDoc, mainAsmObj)
-        mainAsmObj.NewName = newAssemblyName
-
         ' setup the original assembly object tree view
-        Dim oTreeView = TV_oComponent
-        SetupTreeView(oTreeView, mainAsmObj, False)
+        'Dim oTreeView = TV_oComponent
+        'SetupTreeView(oTreeView, mainAsmObj, False)
+        TV_oComponent.Nodes.Add(rootAssemblyObject.OriginalTreeNode)
+        TV_nComponent.Nodes.Add(rootAssemblyObject.NewTreeNode)
 
         ' setup the new assembly object
         ' to start the new assembly is a copy of the original
         ' newAsmObj = AssemblyObjSetup(oAsmDoc, newAsmObj)
         ' newAsmObj.OriginalName = 
 
-        Dim nTreeView = TV_nComponent
-        SetupTreeView(nTreeView, mainAsmObj, True)
+        'Dim nTreeView = TV_nComponent
+        'SetupTreeView(nTreeView, mainAsmObj, True)
 
+
+    End Sub
+
+    Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        MyBase.OnFormClosing(e)
+        _stream.Close()
+        ' _writer.Close()
+    End Sub
+
+    Sub Log(message As String, Optional ByRef numTabs As Integer = 0, Optional ByRef numLines As Integer = 0)
+        If EnableLog Then
+            Dim x As Integer = 0
+            While x < numTabs
+                message = vbTab & message
+                x += 1
+            End While
+
+            _writer.WriteLine(message)
+
+            x = 0
+            While x < numLines
+                _writer.WriteLine("")
+                x += 1
+            End While
+        End If
 
     End Sub
 
@@ -285,7 +330,17 @@ Friend Class AssemblyCopyToolForm
         Next
     End Sub
 
+    Sub SetupAssemblyObject(Optional ByRef ParentAssemblyObject As AssemblyCopyObject = Nothing)
+        If ParentAssemblyObject Is Nothing Then
+            'Dim RootAssemblyObject As New AssemblyCopyObject
+            'RootAssemblyObject.SetOriginalProperties(oAsmDoc)
 
+            'Dim newRootDirectory As String = GetProjectDirectory(_invApp)
+            'RootAssemblyObject.SetNewProperties(GetProjectDirectory(_invApp), defaultPrefix, defaultSuffix)
+        Else
+
+        End If
+    End Sub
     Private Sub ResetCarets()
         MoveCaret(TB_ProjDir)
         MoveCaret(TB_newDir)

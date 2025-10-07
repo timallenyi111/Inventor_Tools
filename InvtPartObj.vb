@@ -4,34 +4,49 @@
     Dim nPrtName As String
     Dim nFilePath As String
     Dim oPrtDoc As Inventor.PartDocument
-    Dim oFileName As String
+    Dim oFullFileName As String
     Dim nFileName As String
     Dim tNode As New TreeNode
+    Dim oPartNumber As String
+    Dim nPartNumber As String
+    Dim oPartOcc As Inventor.ComponentOccurrence
+    Dim oTreeNode As TreeNode
+    Dim nTreeNode As TreeNode
 
-    Property OriginalName As String
+    ReadOnly Property OriginalName As String
         Get
             Return oPrtName
         End Get
-        Set(value As String)
-            oPrtName = value
-        End Set
     End Property
 
-    Property OriginalFullFileName As String
+    ReadOnly Property OriginalFullFileName As String
         Get
-            Return oFileName
+            Return oFullFileName
         End Get
-        Set(value As String)
-            oFileName = value
-        End Set
     End Property
 
-    Property OriginalFilePath As String
+    ''' <summary>
+    ''' returns the file path to the original part disk location including the final "\"
+    ''' </summary>
+    ''' <returns></returns>
+    ReadOnly Property OriginalFilePath As String
         Get
-            Return oFilePath
+            Return oFullFileName.Substring(0, oFullFileName.LastIndexOf("\") + 1)
         End Get
-        Set(value As String)
-            oFilePath = value
+    End Property
+
+    ReadOnly Property OriginalComponentOccurence As Inventor.ComponentOccurrence
+        Get
+            Return oPartOcc
+        End Get
+    End Property
+
+    Property OriginalPartDocument As Inventor.PartDocument
+        Get
+            Return oPrtDoc
+        End Get
+        Set(value As Inventor.PartDocument)
+            oPrtDoc = value
         End Set
     End Property
 
@@ -54,14 +69,7 @@
         End Set
     End Property
 
-    Property OriginalPartDocument As Inventor.PartDocument
-        Get
-            Return oPrtDoc
-        End Get
-        Set(value As Inventor.PartDocument)
-            oPrtDoc = value
-        End Set
-    End Property
+
 
     Property NewFileName As String
         Get
@@ -87,5 +95,25 @@
         End Get
     End Property
 
+    Sub InitialSetup(ByRef PartOcc As Inventor.ComponentOccurrence, ByRef ParentAssemblyOriginalNode As TreeNode,
+                     ByRef ParentAssemblyNewNode As TreeNode)
+        oPartOcc = PartOcc
+        oPrtDoc = PartOcc.Definition.Document
+        oFullFileName = oPrtDoc.FullFileName
+        oPrtName = GetPartName(oFullFileName)
+        oTreeNode = ParentAssemblyOriginalNode.Nodes.Add(oPrtName)
+        nTreeNode = ParentAssemblyNewNode.Nodes.Add(oPrtName) ' right now we are not changing part names at start
 
+    End Sub
+    ''' <summary>
+    ''' Returns a part name that is based on the original file name without the .ipt
+    ''' </summary>
+    ''' <param name="FullFileName"></param>
+    ''' <returns></returns>
+    Private Function GetPartName(ByRef FullFileName As String) As String
+        Dim partName As String = FullFileName.Substring(FullFileName.LastIndexOf("\") + 1)
+        'now remove the .ipt
+        partName = partName.Substring(0, partName.Length - 4)
+        Return partName
+    End Function
 End Class
