@@ -8,7 +8,7 @@ Imports System.IO
 ' treenode
 
 ''' <summary>
-''' This object stores all of the information necessary to make a copy of an assembly
+''' This stores all of the information necessary to make a copy of an assembly
 ''' </summary>
 Friend Class AssemblyCopyObject
 
@@ -38,10 +38,6 @@ Friend Class AssemblyCopyObject
     Sub InitialSetup(Optional asyOcc As ComponentOccurrence = Nothing,
                      Optional oParentTreeNode As TreeNode = Nothing, Optional nParentTreeNode As TreeNode = Nothing)
 
-
-
-
-
         If asyOcc Is Nothing Then
             ' this is the root assembly
             SetOriginalProperties(_invApp.ActiveDocument)
@@ -56,75 +52,28 @@ Friend Class AssemblyCopyObject
 
         For Each curOcc As ComponentOccurrence In oAsmDoc.ComponentDefinition.Occurrences
             If curOcc.DefinitionDocumentType = DocumentTypeEnum.kPartDocumentObject Then
-                ' perform part setup
-                Dim curPartObject As New InvtPartObj
-                curPartObject.InitialSetup(curOcc, oTreeNode, nTreeNode)
-                partList.Add(curPartObject)
+                If CheckForDuplicateDocument(curOcc.Definition.Document) = False Then
+                    ' perform part setup
+                    Dim curPartObject As New InvtPartObj
+                    curPartObject.InitialSetup(curOcc, oTreeNode, nTreeNode)
+                    partList.Add(curPartObject)
+                Else
+                    _form.Log(curOcc._DisplayName & " was a duplicate")
+                End If
+
             ElseIf curOcc.DefinitionDocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
-                ' perform sub assembly setup
-                Dim curAsmObject As New AssemblyCopyObject(_form, _invApp)
-                curAsmObject.InitialSetup(curOcc, oTreeNode, nTreeNode)
-                subAsyList.Add(curAsmObject)
+                If CheckForDuplicateDocument(curOcc.Definition.Document) = False Then
+                    ' perform sub assembly setup
+                    Dim curAsmObject As New AssemblyCopyObject(_form, _invApp)
+                    curAsmObject.InitialSetup(curOcc, oTreeNode, nTreeNode)
+                    subAsyList.Add(curAsmObject)
+                Else
+                    _form.Log(curOcc._DisplayName & " was a duplicate")
+                End If
             End If
         Next
     End Sub
-    ReadOnly Property OriginalName As String
-        Get
-            Return oAsyName
-        End Get
-    End Property
 
-    ReadOnly Property OriginalFullFileName As String
-        Get
-            Return oFullFileName
-        End Get
-    End Property
-
-    ReadOnly Property OriginalPartDocument As PartDocument
-        Get
-            Return oAsmDoc
-        End Get
-    End Property
-
-    ReadOnly Property OriginalTreeNode As TreeNode
-        Get
-            Return oTreeNode
-        End Get
-    End Property
-
-    ReadOnly Property OriginalComponentOccurence As ComponentOccurrence
-        Get
-            Return oCompOcc
-        End Get
-    End Property
-
-    Property NewName As String
-        Get
-            Return nAsyName
-        End Get
-        Set(value As String)
-            nAsyName = value
-        End Set
-    End Property
-    Property NewTreeNode As TreeNode
-        Get
-            Return nTreeNode
-        End Get
-        Set(value As TreeNode)
-            nTreeNode = value
-        End Set
-    End Property
-
-    ReadOnly Property NewRootDirectory As String
-        Get
-            Return nRootDirectory
-        End Get
-    End Property
-    ''' <summary>
-    ''' Sets up all the initial parameters for the original assembly file
-    ''' </summary>
-    ''' <param name="AsyOcc"></param>
-    ''' <param name="ParentAssembly"></param>
     Sub SetOriginalProperties(ByRef AsyDoc As AssemblyDocument,
                               Optional ByRef AsyOcc As ComponentOccurrence = Nothing,
                               Optional ByRef oParentNode As TreeNode = Nothing)
@@ -183,6 +132,94 @@ Friend Class AssemblyCopyObject
         Return projectDir
     End Function
 
+    ''' <summary>
+    ''' Checks for an assembly or part that has the same original full file name in this AssemblyCopyObject Only
+    ''' </summary>
+    ''' <param name="doc"></param>
+    ''' <returns></returns>
+    Function CheckForDuplicateDocument(ByRef doc As Inventor.Document) As Boolean
+        Dim isDuplicate As Boolean = False
+        If doc.DocumentType = DocumentTypeEnum.kPartDocumentObject Then
+            ' this is a part so check the parts list
+            For Each part As InvtPartObj In partList
+                If part.OriginalFullFileName = doc.FullFileName Then
+                    isDuplicate = True
+                    Exit For
+                End If
+            Next
+        ElseIf doc.DocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
+            ' this is an assembly so check the sub assembly list
+            For Each asy As AssemblyCopyObject In subAsyList
+                If asy.OriginalFullFileName = doc.FullFileName Then
+                    isDuplicate = True
+                    Exit For
+                End If
+            Next
+        End If
 
+        Return isDuplicate
+    End Function
+
+
+#Region "Properties"
+    ReadOnly Property OriginalName As String
+        Get
+            Return oAsyName
+        End Get
+    End Property
+
+    ReadOnly Property OriginalFullFileName As String
+        Get
+            Return oFullFileName
+        End Get
+    End Property
+
+    ReadOnly Property OriginalPartDocument As PartDocument
+        Get
+            Return oAsmDoc
+        End Get
+    End Property
+
+    ReadOnly Property OriginalTreeNode As TreeNode
+        Get
+            Return oTreeNode
+        End Get
+    End Property
+
+    ReadOnly Property OriginalComponentOccurence As ComponentOccurrence
+        Get
+            Return oCompOcc
+        End Get
+    End Property
+
+    Property NewName As String
+        Get
+            Return nAsyName
+        End Get
+        Set(value As String)
+            nAsyName = value
+        End Set
+    End Property
+    Property NewTreeNode As TreeNode
+        Get
+            Return nTreeNode
+        End Get
+        Set(value As TreeNode)
+            nTreeNode = value
+        End Set
+    End Property
+
+    ReadOnly Property NewRootDirectory As String
+        Get
+            Return nRootDirectory
+        End Get
+    End Property
+    ''' <summary>
+    ''' Sets up all the initial parameters for the original assembly file
+    ''' </summary>
+    ''' <param name="AsyOcc"></param>
+    ''' <param name="ParentAssembly"></param>
+
+#End Region
 
 End Class
