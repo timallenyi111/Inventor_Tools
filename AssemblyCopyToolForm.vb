@@ -61,7 +61,10 @@ Friend Class AssemblyCopyToolForm
         'create and setup the AssemblyCopyObject
         rootAssemblyObject = New AssemblyCopyObject(Me, _invApp)
         rootAssemblyObject.InitialSetup()
-        rootAssemblyObject.GenerateSetupLog()
+        If EnableLog Then
+            rootAssemblyObject.GenerateSetupLog()
+        End If
+
 
         TB_FileName.Text = rootAssemblyObject.OriginalName & ".iam"
         ' by default the new assembly name is the same as the original
@@ -106,11 +109,72 @@ Friend Class AssemblyCopyToolForm
 
     End Sub
 
-    Private Sub AssemblyCopyToolForm_Resize(sender As Object, e As EventArgs) Handles Me.Resize
-        FormLayoutSetup(False)
-        ResetCarets()
+
+
+
+
+#Region "Form Text Controls"
+
+    ''' <summary>
+    ''' Updates the new assembly name label and then calls for the resizing of the UI in that row
+    ''' </summary>
+    ''' <param name="assmName"></param>
+    Private Sub ChangeNewAssemblyNameLabel(ByRef assmName As String)
+        Label_NewAssmName.Text = "  :  " & assmName
+        ResizeAssemblyNameLayout()
     End Sub
 
+    Private Sub PrefixTB_TextChanged(sender As Object, e As EventArgs) Handles TB_Prefix.TextChanged
+        UpdateNewFileName()
+    End Sub
+
+    Private Sub TB_NewAssemblyName_TextChanged(sender As Object, e As EventArgs) Handles TB_NewAssemblyName.TextChanged
+        UpdateNewFileName()
+    End Sub
+
+    Private Sub TB_Suffix_TextChanged(sender As Object, e As EventArgs) Handles TB_Suffix.TextChanged
+        UpdateNewFileName()
+    End Sub
+
+    Private Sub UpdateNewFileName()
+
+        If rootAssemblyObject Is Nothing Then
+            ' this happens on the initial load
+        Else
+            Dim asmName As String = TB_Prefix.Text & TB_NewAssemblyName.Text & TB_Suffix.Text
+            Label_NewAssmName.Text = "  :  " & asmName
+            ResizeAssemblyNameLayout()
+            rootAssemblyObject.NewName = asmName
+            TB_newDir.Text = rootAssemblyObject.NewRootDirectory
+            ResetCarets()
+        End If
+
+
+    End Sub
+
+#End Region
+
+
+
+#Region "Button Clicks"
+
+    Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
+        rootAssemblyObject.CreateNewFiles(dryrun:=False)
+    End Sub
+
+    Private Sub NewDirButton_Click(sender As Object, e As EventArgs) Handles newDirButton.Click
+        Using NewDirectoryFolderBrowser As New FolderBrowserDialog()
+            NewDirectoryFolderBrowser.SelectedPath = newDirectory
+            If NewDirectoryFolderBrowser.ShowDialog() = DialogResult.OK Then
+                newDirectory = NewDirectoryFolderBrowser.SelectedPath & "\"
+                TB_newDir.Text = newDirectory
+            End If
+        End Using
+    End Sub
+
+#End Region
+
+#Region "Form Control Functions"
     Private Sub FormLayoutSetup(ByRef initialLayout As Boolean)
         Dim clientWidth As Integer = Me.ClientSize.Width
         Dim clientHeight As Integer = Me.ClientSize.Height
@@ -192,24 +256,14 @@ Friend Class AssemblyCopyToolForm
         ResetCarets()
 
     End Sub
-
-    Private Sub NewDirButton_Click(sender As Object, e As EventArgs) Handles newDirButton.Click
-        Using NewDirectoryFolderBrowser As New FolderBrowserDialog()
-            NewDirectoryFolderBrowser.SelectedPath = newDirectory
-            If NewDirectoryFolderBrowser.ShowDialog() = DialogResult.OK Then
-                newDirectory = NewDirectoryFolderBrowser.SelectedPath & "\"
-                TB_newDir.Text = newDirectory
-            End If
-        End Using
+    Private Sub ResetCarets()
+        MoveCaret(TB_ProjDir)
+        MoveCaret(TB_newDir)
     End Sub
 
-    ''' <summary>
-    ''' Updates the new assembly name label and then calls for the resizing of the UI in that row
-    ''' </summary>
-    ''' <param name="assmName"></param>
-    Private Sub ChangeNewAssemblyNameLabel(ByRef assmName As String)
-        Label_NewAssmName.Text = "  :  " & assmName
-        ResizeAssemblyNameLayout()
+    Private Sub AssemblyCopyToolForm_Resize(sender As Object, e As EventArgs) Handles Me.Resize
+        FormLayoutSetup(False)
+        ResetCarets()
     End Sub
 
     Private Sub ResizeAssemblyNameLayout()
@@ -231,32 +285,12 @@ Friend Class AssemblyCopyToolForm
         Label_NewAssmName.Left = clientWidth - medium_gap - Label_NewAssmName.Width
     End Sub
 
-    Private Sub PrefixTB_TextChanged(sender As Object, e As EventArgs) Handles TB_Prefix.TextChanged
-
-    End Sub
-
-    Private Sub TB_NewAssemblyName_TextChanged(sender As Object, e As EventArgs) Handles TB_NewAssemblyName.TextChanged
-
-    End Sub
-
-    Private Sub TB_Suffix_TextChanged(sender As Object, e As EventArgs) Handles TB_Suffix.TextChanged
-
-    End Sub
-
-    Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
-
-    End Sub
-
-    Private Sub ResetCarets()
-        MoveCaret(TB_ProjDir)
-        MoveCaret(TB_newDir)
-    End Sub
-
     ''' <summary>
     ''' Writes text in a textbox and scrolls to the end
     ''' </summary>
     ''' <param name="textBox"></param>
     ''' <param name="msg"></param>
+
     Sub LongTextboxWrite(ByRef textBox As System.Windows.Forms.TextBox, ByRef msg As String)
         textBox.Text = msg
         textBox.SelectionStart = textBox.Text.Length
@@ -271,6 +305,11 @@ Friend Class AssemblyCopyToolForm
         textBox.SelectionLength = 0
         textBox.ScrollToCaret()
     End Sub
+
+
+#End Region
+
+
 End Class
 
 Public Class Win32

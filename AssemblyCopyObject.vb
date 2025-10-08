@@ -35,6 +35,8 @@ Friend Class AssemblyCopyObject
         partList = New List(Of InvtPartObj)
         subAsyList = New List(Of AssemblyCopyObject)
     End Sub
+
+#Region "setup functions"
     Sub InitialSetup(Optional asyOcc As ComponentOccurrence = Nothing, Optional rootDirectory As String = Nothing,
                      Optional oParentTreeNode As TreeNode = Nothing, Optional nParentTreeNode As TreeNode = Nothing)
 
@@ -209,6 +211,143 @@ Friend Class AssemblyCopyObject
 
     End Sub
 
+#End Region
+
+#Region "Update Functions"
+    Sub NameChange()
+        ' remove the last \
+        nRootDirectory = nRootDirectory.Substring(0, nRootDirectory.LastIndexOf("\"))
+        ' remove the old sub directory but leave the \
+        nRootDirectory = nRootDirectory.Substring(0, nRootDirectory.LastIndexOf("\") + 1)
+        ' rename the sub directory and add \
+        nRootDirectory = nRootDirectory & nAsyName & "\"
+
+        ' rename the treeview node
+        nTreeNode.Text = nAsyName
+    End Sub
+
+#End Region
+
+#Region "File Copy Functions"
+    Sub CreateNewFiles(Optional dryrun As Boolean = False)
+
+        'copy the root assembly
+        If dryrun Then
+            CopyFile_DRYRUN(oFullFileName, nFullFileName)
+        Else
+            CopyFile(oFullFileName, nFullFileName)
+        End If
+
+
+        For Each part As InvtPartObj In partList
+            If dryrun Then
+                CopyFile_DRYRUN(part.OriginalFullFileName, part.NewFullFileName)
+            Else
+                CopyFile(part.OriginalFullFileName, part.NewFullFileName)
+            End If
+
+        Next
+
+        For Each subAsy As AssemblyCopyObject In subAsyList
+            subAsy.CreateNewFiles(dryrun)
+        Next
+
+        If dryrun = False Then
+            ReplaceOccurences()
+        End If
+    End Sub
+
+    Private Sub CopyFile(oFile As String, nFile As String)
+        _form.Log("copying file: " & oFile)
+        Dim nFilePath As String = nFile.Substring(0, nFile.LastIndexOf("\"))
+        _form.Log("New File Path: " & nFilePath, numTabs:=1)
+        'check if the new directory exists and if it doesn't create one.
+        If Directory.Exists(nFilePath) = False Then
+            Directory.CreateDirectory(nFilePath)
+            _form.Log("New Directory Created")
+        End If
+
+        'check if new file already exists, if so tell them about it
+        If System.IO.File.Exists(nFile) Then
+            _form.Log("!!!!!!! FILE SKIPPED BECAUSE IT ALREADY EXISTS !!!!!!!")
+        Else
+            System.IO.File.Copy(oFile, nFile, False)
+            _form.Log("COPY SUCCESSFUL", numTabs:=1, numLines:=1)
+        End If
+    End Sub
+
+
+
+    ''' <summary>
+    ''' creates a log file of the copy but doesn't execute any file operations
+    ''' </summary>
+    ''' <param name="oFile"></param>
+    ''' <param name="nFile"></param>
+    Private Sub CopyFile_DRYRUN(oFile As String, nFile As String)
+        _form.Log("copying file: " & oFile)
+        Dim nFilePath As String = nFile.Substring(0, nFile.LastIndexOf("\"))
+        _form.Log("New File Path: " & nFilePath, numTabs:=1)
+        'check if the new directory exists and if it doesn't create one.
+        If Directory.Exists(nFilePath) = False Then
+            'Directory.CreateDirectory(nFilePath)
+            _form.Log("New Directory Created")
+        End If
+
+        'check if new file already exists, if so tell them about it
+        If System.IO.File.Exists(nFile) Then
+            _form.Log("!!!!!!! FILE SKIPPED BECAUSE IT ALREADY EXISTS !!!!!!!")
+        Else
+            'System.IO.File.Copy(oFile, nFile, False)
+            _form.Log("COPY SUCCESSFUL", numTabs:=1, numLines:=1)
+        End If
+    End Sub
+
+    Private Sub ReplaceOccurences(Optional ByRef asyOcc As ComponentOccurrence = Nothing)
+        If asyOcc Is Nothing Then
+            ' this is the root assembly
+            ' we need to open the new assembly
+            Dim newAsmDoc As Inventor.AssemblyDocument = _invApp.Documents.Open(nFullFileName)
+            Dim newAsmOccs As Inventor.ComponentOccurrences = newAsmDoc.ComponentDefinition.Occurrences
+
+            'replace the parts in the root assembly
+            If partList.Count > 0 Then
+                For Each part As InvtPartObj In partList
+                    newAsmOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+                Next
+            End If
+
+            If subAsyList.Count > 0 Then
+                For Each subAsy As AssemblyCopyObject In subAsyList
+                    Dim curOcc As ComponentOccurrence = newAsmOccs.ItemByName(subAsy.OriginalComponentOccurence.Name)
+                    curOcc.Replace(subAsy.NewFullFileName, True)
+                    subAsy.ReplaceOccurences(curOcc)
+                Next
+            End If
+
+        Else
+            Dim subAsyOccs As ComponentOccurrences = asyOcc.Definition.Occurrences
+            'replace the parts in the root assembly
+            If partList.Count > 0 Then
+                For Each part As InvtPartObj In partList
+                    subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+                Next
+            End If
+
+            If subAsyList.Count > 0 Then
+                For Each subAsy As AssemblyCopyObject In subAsyList
+                    'get the occurence of the current subAsy by searching for it by name using the original occurence name
+                    Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurence.Name)
+
+                    'recall this sub by getting the occurence of the component to be replaced by 
+                    curOcc.Replace(subAsy.NewFullFileName, True)
+                    subAsy.ReplaceOccurences(curOcc)
+                Next
+            End If
+        End If
+    End Sub
+
+#End Region
+
 #Region "Properties"
     ReadOnly Property OriginalName As String
         Get
@@ -246,6 +385,7 @@ Friend Class AssemblyCopyObject
         End Get
         Set(value As String)
             nAsyName = value
+            NameChange()
         End Set
     End Property
     Property NewTreeNode As TreeNode

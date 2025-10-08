@@ -93,6 +93,7 @@ Partial Class AssemblyCopyToolForm
         ' TV_nComponent
         ' 
         TV_nComponent.BorderStyle = BorderStyle.FixedSingle
+        TV_nComponent.LabelEdit = True
         TV_nComponent.Location = New Point(712, 150)
         TV_nComponent.Name = "TV_nComponent"
         TV_nComponent.Size = New Size(662, 700)
@@ -101,7 +102,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' CopyButton
         ' 
-        CopyButton.Font = New Font("Calibri", 14.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        CopyButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         CopyButton.Location = New Point(615, 1300)
         CopyButton.Name = "CopyButton"
         CopyButton.Size = New Size(170, 70)
@@ -188,7 +189,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' AssemblyCopyToolForm
         ' 
-        AutoScaleDimensions = New SizeF(12.0F, 29.0F)
+        AutoScaleDimensions = New SizeF(12F, 29F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1400, 1400)
         Controls.Add(Label_NewAssmName)
@@ -206,7 +207,7 @@ Partial Class AssemblyCopyToolForm
         Controls.Add(TB_ProjDir)
         Controls.Add(Label2)
         Controls.Add(Label1)
-        Font = New Font("Calibri", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        Font = New Font("Calibri", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         Margin = New Padding(3, 4, 3, 4)
         Name = "AssemblyCopyToolForm"
         Text = "Assembly Copy Tool"
