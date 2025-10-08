@@ -5,7 +5,7 @@
     Dim nFilePath As String
     Dim oPrtDoc As Inventor.PartDocument
     Dim oFullFileName As String
-    Dim nFileName As String
+    'Dim nFileName As String
     Dim tNode As New TreeNode
     Dim oPartNumber As String
     Dim nPartNumber As String
@@ -56,7 +56,6 @@
         End Get
         Set(value As String)
             nPrtName = value
-            NewFileName = nPrtName & ".ipt"
         End Set
     End Property
 
@@ -70,16 +69,6 @@
     End Property
 
 
-
-    Property NewFileName As String
-        Get
-            Return nFileName
-        End Get
-        Set(value As String)
-            nFileName = value
-        End Set
-    End Property
-
     Property NewTreeNode As TreeNode
         Get
             Return tNode
@@ -91,18 +80,20 @@
 
     ReadOnly Property NewFullFileName As String
         Get
-            Return nFilePath & nFileName
+            Return nFilePath & nPrtName & ".ipt"
         End Get
     End Property
 
-    Sub InitialSetup(ByRef PartOcc As Inventor.ComponentOccurrence, ByRef ParentAssemblyOriginalNode As TreeNode,
-                     ByRef ParentAssemblyNewNode As TreeNode)
+    Sub InitialSetup(ByRef PartOcc As Inventor.ComponentOccurrence, ByRef rootDirectory As String,
+                     ByRef ParentAssemblyOriginalNode As TreeNode, ByRef ParentAssemblyNewNode As TreeNode)
         oPartOcc = PartOcc
         oPrtDoc = PartOcc.Definition.Document
         oFullFileName = oPrtDoc.FullFileName
         oPrtName = GetPartName(oFullFileName)
         oTreeNode = ParentAssemblyOriginalNode.Nodes.Add(oPrtName)
-        nTreeNode = ParentAssemblyNewNode.Nodes.Add(oPrtName) ' right now we are not changing part names at start
+        nPrtName = oPrtName ' For now.... we aren't changing the new names by default
+        nFilePath = rootDirectory
+        nTreeNode = ParentAssemblyNewNode.Nodes.Add(nPrtName)
 
     End Sub
     ''' <summary>

@@ -61,6 +61,7 @@ Friend Class AssemblyCopyToolForm
         'create and setup the AssemblyCopyObject
         rootAssemblyObject = New AssemblyCopyObject(Me, _invApp)
         rootAssemblyObject.InitialSetup()
+        rootAssemblyObject.GenerateSetupLog()
 
         TB_FileName.Text = rootAssemblyObject.OriginalName & ".iam"
         ' by default the new assembly name is the same as the original
