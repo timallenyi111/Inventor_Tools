@@ -25,7 +25,7 @@ Friend Class AssemblyCopyObject
     Dim oTreeNode As TreeNode
     Dim nTreeNode As TreeNode
     Dim oCompOcc As ComponentOccurrence
-    Dim subType As String
+    Dim _subType As String
     Dim projectDirectory As String
 
     Public Sub New(form As AssemblyCopyToolForm, invApp As Inventor.Application)
@@ -40,6 +40,7 @@ Friend Class AssemblyCopyObject
     Sub InitialSetup(Optional asyOcc As ComponentOccurrence = Nothing, Optional rootDirectory As String = Nothing,
                      Optional oParentTreeNode As TreeNode = Nothing, Optional nParentTreeNode As TreeNode = Nothing)
 
+        ' this is the root assembly
         If asyOcc Is Nothing Then
             ' this is the root assembly         
             SetOriginalProperties(_invApp.ActiveDocument)
@@ -69,6 +70,7 @@ Friend Class AssemblyCopyObject
             ElseIf curOcc.DefinitionDocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
                 If CheckForDuplicateDocument(curOcc.Definition.Document) = False Then
                     ' perform sub assembly setup
+
                     Dim curAsmObject As New AssemblyCopyObject(_form, _invApp)
                     curAsmObject.InitialSetup(curOcc, nRootDirectory, oTreeNode, nTreeNode)
                     subAsyList.Add(curAsmObject)
@@ -79,6 +81,11 @@ Friend Class AssemblyCopyObject
         Next
     End Sub
 
+    ''' <summary>
+    ''' Sets up all the initial parameters for the original assembly file
+    ''' </summary>
+    ''' <param name="AsyOcc"></param>
+    ''' <param name="ParentAssembly"></param>
     Sub SetOriginalProperties(ByRef AsyDoc As AssemblyDocument,
                               Optional ByRef AsyOcc As ComponentOccurrence = Nothing,
                               Optional ByRef oParentNode As TreeNode = Nothing)
@@ -93,6 +100,9 @@ Friend Class AssemblyCopyObject
             oTreeNode = New TreeNode(oAsyName)
             subType = "Root"
         Else
+            If CheckIfOccurenceIsFrame(oCompOcc) Then
+                _subType = "Frame"
+            End If
             oTreeNode = oParentNode.Nodes.Add(oAsyName)
         End If
     End Sub
@@ -165,6 +175,18 @@ Friend Class AssemblyCopyObject
         Return isDuplicate
     End Function
 
+    Function CheckIfOccurenceIsFrame(ByRef compOcc As ComponentOccurrence) As Boolean
+        Dim isFrame As Boolean = False
+        For Each attSet As AttributeSet In compOcc.AttributeSets
+            For Each atri As Inventor.Attribute In attSet
+                If atri.Value = "MasterFrameOcc" Then
+                    isFrame = True
+                End If
+            Next
+        Next
+        Return isFrame
+    End Function
+
     Sub GenerateSetupLog(Optional ByRef isRoot As Boolean = True)
         If isRoot Then
             _form.Log("", numLines:=4)
@@ -199,6 +221,9 @@ Friend Class AssemblyCopyObject
             _form.Log("_______________________", numLines:=1)
             For Each subAsy As AssemblyCopyObject In subAsyList
                 _form.Log(subAsy.OriginalName & ": assembly added")
+                If subAsy.SubType = "Frame" Then
+                    _form.Log("**FRAME**")
+                End If
                 _form.Log("original file name: " & subAsy.OriginalFullFileName, numTabs:=1)
                 _form.Log("new file name: " & subAsy.NewFullFileName, numTabs:=1, numLines:=1)
             Next
@@ -238,23 +263,18 @@ Friend Class AssemblyCopyObject
             CopyFile(oFullFileName, nFullFileName)
         End If
 
-
         For Each part As InvtPartObj In partList
             If dryrun Then
                 CopyFile_DRYRUN(part.OriginalFullFileName, part.NewFullFileName)
             Else
                 CopyFile(part.OriginalFullFileName, part.NewFullFileName)
             End If
-
         Next
 
         For Each subAsy As AssemblyCopyObject In subAsyList
             subAsy.CreateNewFiles(dryrun)
         Next
 
-        If dryrun = False Then
-            ReplaceOccurences()
-        End If
     End Sub
 
     Private Sub CopyFile(oFile As String, nFile As String)
@@ -275,8 +295,6 @@ Friend Class AssemblyCopyObject
             _form.Log("COPY SUCCESSFUL", numTabs:=1, numLines:=1)
         End If
     End Sub
-
-
 
     ''' <summary>
     ''' creates a log file of the copy but doesn't execute any file operations
@@ -302,7 +320,7 @@ Friend Class AssemblyCopyObject
         End If
     End Sub
 
-    Private Sub ReplaceOccurences(Optional ByRef asyOcc As ComponentOccurrence = Nothing)
+    Sub ReplaceOccurences(Optional ByRef asyOcc As ComponentOccurrence = Nothing)
         If asyOcc Is Nothing Then
             ' this is the root assembly
             ' we need to open the new assembly
@@ -410,11 +428,15 @@ Friend Class AssemblyCopyObject
             Return nRootDirectory
         End Get
     End Property
-    ''' <summary>
-    ''' Sets up all the initial parameters for the original assembly file
-    ''' </summary>
-    ''' <param name="AsyOcc"></param>
-    ''' <param name="ParentAssembly"></param>
+
+    Property SubType As String
+        Get
+            Return _subType
+        End Get
+        Set(value As String)
+            _subType = value
+        End Set
+    End Property
 
 #End Region
 

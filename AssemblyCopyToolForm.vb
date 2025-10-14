@@ -160,6 +160,7 @@ Friend Class AssemblyCopyToolForm
 
     Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
         rootAssemblyObject.CreateNewFiles(dryrun:=False)
+        rootAssemblyObject.ReplaceOccurences()
     End Sub
 
     Private Sub NewDirButton_Click(sender As Object, e As EventArgs) Handles newDirButton.Click
@@ -241,6 +242,9 @@ Friend Class AssemblyCopyToolForm
         CopyButton.Left = CInt(clientWidth / 2) - CopyButton.Width / 2
         CopyButton.Top = CInt(clientHeight / 14) * 13
 
+        TestButton.Left = CopyButton.Left + CopyButton.Width + medium_gap
+        TestButton.Top = CopyButton.Top
+
         Dim newDirLabelTop As Integer = TV_oComponent.Top + TV_oComponent.Height + medium_gap * 1.5
         Label3.Top = newDirLabelTop
 
@@ -304,6 +308,10 @@ Friend Class AssemblyCopyToolForm
         textBox.SelectionStart = textBox.Text.Length
         textBox.SelectionLength = 0
         textBox.ScrollToCaret()
+    End Sub
+
+    Private Sub TestButton_Click(sender As Object, e As EventArgs) Handles TestButton.Click
+        ReadFrameAttribute(_invApp.ActiveDocument)
     End Sub
 
 
