@@ -346,8 +346,10 @@ Friend Class AssemblyCopyObject
                     curOcc.Replace(subAsy.NewFullFileName, True)
                     If subAsy.SubType = "Frame" Then
                         subAsy.ReplaceFrame(curOcc)
+                    Else
+                        subAsy.ReplaceOccurences(curOcc)
                     End If
-                    subAsy.ReplaceOccurences(curOcc)
+
                 Next
             End If
 
@@ -369,31 +371,12 @@ Friend Class AssemblyCopyObject
                     curOcc.Replace(subAsy.NewFullFileName, True)
                     If subAsy.SubType = "Frame" Then
                         subAsy.ReplaceFrame(curOcc)
+                    Else
+                        subAsy.ReplaceOccurences(curOcc)
                     End If
-                    subAsy.ReplaceOccurences(curOcc)
+
                 Next
             End If
-        End If
-    End Sub
-
-    Sub ReplaceFrameOccurences(ByRef frmOcc As ComponentOccurrence, ByRef newSkelId As String)
-        Dim frmOccs As ComponentOccurrences = frmOcc.Definition.Occurrences
-
-        If partList.Count > 0 Then
-            For Each part As InvtPartObj In partList
-                frmOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
-            Next
-
-            'this is a frame assembly and we need to replace the skeleton component id
-            Dim skelOcc As ComponentOccurrence = GetSkeletonOcc(frmOcc)
-            For Each attSet As AttributeSet In skelOcc.AttributeSets
-                For Each att As Attribute In attSet
-                    ' replace the old skeleton id with the new
-                    If att.Name = "ID" Then
-                        att.Value = newSkelId
-                    End If
-                Next
-            Next
         End If
     End Sub
 
