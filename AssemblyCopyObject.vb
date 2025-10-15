@@ -320,7 +320,13 @@ Friend Class AssemblyCopyObject
         End If
     End Sub
 
-    Sub ReplaceOccurences(Optional ByRef asyOcc As ComponentOccurrence = Nothing)
+    ''' <summary>
+    ''' Replaces the components in assemblys and sub-assemblies
+    ''' </summary>
+    ''' <param name="asyOcc"></param>
+    ''' <param name="skelId"></param>
+    Sub ReplaceOccurences(Optional ByRef asyOcc As ComponentOccurrence = Nothing,
+                          Optional ByVal skelId As String = Nothing)
         If asyOcc Is Nothing Then
             ' this is the root assembly
             ' we need to open the new assembly
@@ -338,6 +344,9 @@ Friend Class AssemblyCopyObject
                 For Each subAsy As AssemblyCopyObject In subAsyList
                     Dim curOcc As ComponentOccurrence = newAsmOccs.ItemByName(subAsy.OriginalComponentOccurence.Name)
                     curOcc.Replace(subAsy.NewFullFileName, True)
+                    If subAsy.SubType = "Frame" Then
+                        subAsy.ReplaceFrame(curOcc)
+                    End If
                     subAsy.ReplaceOccurences(curOcc)
                 Next
             End If
@@ -358,11 +367,158 @@ Friend Class AssemblyCopyObject
 
                     'recall this sub by getting the occurence of the component to be replaced by 
                     curOcc.Replace(subAsy.NewFullFileName, True)
+                    If subAsy.SubType = "Frame" Then
+                        subAsy.ReplaceFrame(curOcc)
+                    End If
                     subAsy.ReplaceOccurences(curOcc)
                 Next
             End If
         End If
     End Sub
+
+    Sub ReplaceFrameOccurences(ByRef frmOcc As ComponentOccurrence, ByRef newSkelId As String)
+        Dim frmOccs As ComponentOccurrences = frmOcc.Definition.Occurrences
+
+        If partList.Count > 0 Then
+            For Each part As InvtPartObj In partList
+                frmOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+            Next
+
+            'this is a frame assembly and we need to replace the skeleton component id
+            Dim skelOcc As ComponentOccurrence = GetSkeletonOcc(frmOcc)
+            For Each attSet As AttributeSet In skelOcc.AttributeSets
+                For Each att As Attribute In attSet
+                    ' replace the old skeleton id with the new
+                    If att.Name = "ID" Then
+                        att.Value = newSkelId
+                    End If
+                Next
+            Next
+        End If
+    End Sub
+
+    ''' <summary>
+    ''' Replaces the frame assembly component along with all of its occurences
+    ''' Changes the frame assembly id and frame skeleton component id to a new id
+    ''' </summary>
+    ''' <param name="frmOcc"></param>
+    Private Sub ReplaceFrame(ByRef frmOcc As ComponentOccurrence)
+        'replace the old skeleton id with a new one
+        Dim nSkelId As String = Nothing
+        For Each attSet As AttributeSet In frmOcc.Definition.AttributeSets
+            For Each atri As Attribute In attSet
+                If atri.Name = "Frame.Skeletons" Then
+                    Dim oAtriVal As String = atri.Value
+                    Dim skelIdStart As Integer = GetSkelIdStartInt(oAtriVal)
+                    Dim skelIdEnd As Integer = GetSkelIdEndInt(oAtriVal, skelIdStart)
+
+                    Dim oSkelId As String = oAtriVal.Substring(skelIdStart, skelIdEnd - skelIdStart)
+
+                    nSkelId = GenerateNewSkelId(oSkelId)
+
+                    Dim nAtriVal As String = oAtriVal.Substring(0, skelIdStart) & nSkelId &
+                        oAtriVal.Substring(skelIdEnd)
+
+                    atri.Value = nAtriVal
+                End If
+            Next
+        Next
+
+        Dim subAsyOccs As ComponentOccurrences = frmOcc.Definition.Occurrences
+        'replace the parts in the root assembly
+        If partList.Count > 0 Then
+            For Each part As InvtPartObj In partList
+                subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+            Next
+        End If
+
+        If subAsyList.Count > 0 Then
+            For Each subAsy As AssemblyCopyObject In subAsyList
+                'get the occurence of the current subAsy by searching for it by name using the original occurence name
+                Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurence.Name)
+
+                'recall this sub by getting the occurence of the component to be replaced by 
+                curOcc.Replace(subAsy.NewFullFileName, True)
+                If subAsy.SubType = "Frame" Then
+                    subAsy.ReplaceFrame(curOcc)
+                End If
+                subAsy.ReplaceOccurences(curOcc)
+            Next
+        End If
+
+        'find the skeleton occurence so we can replace the id
+        Dim skelOcc As ComponentOccurrence = GetSkeletonOcc(frmOcc.Definition.Occurrences)
+        For Each attSet As AttributeSet In skelOcc.AttributeSets
+            For Each att As Attribute In attSet
+                ' replace the old skeleton id with the new
+                If att.Name = "ID" Then
+                    att.Value = nSkelId
+                End If
+            Next
+        Next
+
+    End Sub
+
+    Function GetSkeletonOcc(ByVal frmOccs As ComponentOccurrences) As ComponentOccurrence
+        Dim skeletonOcc As ComponentOccurrence = Nothing
+        For Each occ As ComponentOccurrence In frmOccs
+            For Each attSet In occ.AttributeSets
+                For Each ati As Attribute In attSet
+                    If ati.Name = "Type" Then
+                        If ati.Value = "SkeletonType" Then
+                            skeletonOcc = occ
+                            Return skeletonOcc
+                        End If
+                    End If
+                Next
+            Next
+        Next
+        Return skeletonOcc
+    End Function
+
+    ''' <summary>
+    ''' Get the integer for the start of the skeleton id in the frame assembly attribute value
+    ''' </summary>
+    ''' <param name="atri"></param>
+    ''' <returns></returns>
+    Private Function GetSkelIdStartInt(ByVal atri As String) As Integer
+        Dim skelIDStart = InStr(atri, "SkeletonID")
+        Dim skelId As String = atri.Substring(skelIDStart)
+        skelIDStart = skelIDStart + InStr(skelId, """")
+        Return skelIDStart
+    End Function
+
+    ''' <summary>
+    ''' Gets the integer for the end of the skeleton id in the frame assembly attribute value
+    ''' </summary>
+    ''' <param name="atri"></param>
+    ''' <param name="skelIdStart"></param>
+    ''' <returns></returns>
+    Private Function GetSkelIdEndInt(ByVal atri As String, ByVal skelIdStart As Integer) As Integer
+        Dim skelId As String = atri.Substring(skelIdStart)
+        Dim skelIdEnd As Integer = skelIdStart + InStr(skelId, """") - 1
+        Return skelIdEnd
+    End Function
+
+    ''' <summary>
+    ''' Replaces everything after the final "-" in the original skeleton id with random integers
+    ''' </summary>
+    ''' <param name="oSkelId"></param>
+    ''' <returns></returns>
+    Private Function GenerateNewSkelId(ByVal oSkelId As String) As String
+        Dim newSkelIdEnd As String = oSkelId.Substring(oSkelId.LastIndexOf("-") + 1)
+        Debug.WriteLine("SkeletonID End: " & newSkelIdEnd)
+        Dim i As Integer = 0
+        Dim rnd As New Random
+        While i < newSkelIdEnd.Length
+            Dim newInt As Integer = rnd.Next(0, 9)
+            Dim newChar As String = newInt.ToString
+            newSkelIdEnd = newSkelIdEnd.Substring(0, i) & newChar & newSkelIdEnd.Substring(i + 1)
+            i += 1
+        End While
+        Dim newSkelId As String = oSkelId.Substring(0, oSkelId.LastIndexOf("-") + 1) & newSkelIdEnd
+        Return newSkelId
+    End Function
 
 #End Region
 
