@@ -9,9 +9,25 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="OldCode\CopyToolFunctions.vb" />
+    <Compile Remove="OldCode\InventorFunctions.vb" />
+    <Compile Remove="OldCode\InvtAssemblyObj.vb" />
+    <Compile Remove="OldCode\InvtComponentObj.vb" />
+    <Compile Remove="OldCode\OldFunctions.vb" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Import Include="System.Data" />
     <Import Include="System.Drawing" />
     <Import Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="OldCode\CopyToolFunctions.vb" />
+    <None Include="OldCode\InventorFunctions.vb" />
+    <None Include="OldCode\InvtAssemblyObj.vb" />
+    <None Include="OldCode\InvtComponentObj.vb" />
+    <None Include="OldCode\OldFunctions.vb" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,6 +49,10 @@
       <Generator>MyApplicationCodeGenerator</Generator>
       <LastGenOutput>Application.Designer.vb</LastGenOutput>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="LogFiles\" />
   </ItemGroup>
 
 </Project>

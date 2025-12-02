@@ -108,26 +108,9 @@ Module CopyToolFunctions
         Next
     End Sub
 
-    ''' <summary>
-    ''' Writes text in a textbox and scrolls to the end
-    ''' </summary>
-    ''' <param name="textBox"></param>
-    ''' <param name="msg"></param>
-    Sub LongTextboxWrite(ByRef textBox As System.Windows.Forms.TextBox, ByRef msg As String)
-        textBox.Text = msg
-        textBox.SelectionStart = textBox.Text.Length
-        textBox.SelectionLength = 0
-        textBox.ScrollToCaret()
-    End Sub
 
-    Sub MoveCaret(ByRef textBox As System.Windows.Forms.TextBox)
-        textBox.SelectionStart = 0
-        textBox.SelectionLength = 0
-        textBox.ScrollToCaret()
-        textBox.SelectionStart = textBox.Text.Length
-        textBox.SelectionLength = 0
-        textBox.ScrollToCaret()
-    End Sub
+
+
 
 
 End Module

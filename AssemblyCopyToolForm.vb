@@ -5,29 +5,26 @@ Imports System.Runtime.InteropServices
 Imports System.Type
 Imports System.Windows.Forms.VisualStyles.VisualStyleElement
 Imports Inventor
+Imports System.IO
 
 
 Friend Class AssemblyCopyToolForm
     Inherits System.Windows.Forms.Form
     Public _invApp As Inventor.Application
     Public oAsmDoc As Inventor.AssemblyDocument
-    ''' <summary>
-    ''' this is currently the project directory of the assembly being copied plus the new assembly name
-    ''' as a subfolder
-    ''' </summary>
-    'Dim newRootDirectory As String = ""
-    Dim mainAsmObj As New InvtAssemblyObj
-    Dim newAsmObj As New InvtAssemblyObj
-    'Dim projectDir As String
-    'Dim oAsmFileName As String
+    Public _stream As FileStream
+    Public _writer As StreamWriter
+    Dim logPath As String = "C:\Users\Tim\source\repos\Inventor_Tools\LogFiles\"
+    Dim EnableLog As Boolean = True
     Dim oAsmCompDef As AssemblyComponentDefinition
     Dim newDirectory As String
-
+    Dim rootAssemblyObject As AssemblyCopyObject
     Dim defaultSuffix As String = "_2"
+    Dim defaultPrefix As String = ""
     Dim medium_gap As Integer = 10
     Dim labelRightEdge As Integer = 164
 
-    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    Private Sub AssemblyCopyFormLoad(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error Resume Next
 
         'get an active session of Inventor
@@ -46,49 +43,138 @@ Friend Class AssemblyCopyToolForm
 
         On Error GoTo 0
 
-        Dim oAsmFileName As String = GetAssemblyFileName(oAsmDoc)
-        Dim projectDir As String = GetProjectDirectory(_invApp)
-        Dim newAssemblyName As String = AddPrefixSuffix(GetComponentName(oAsmDoc), "", defaultSuffix)
-        Dim newRootDirectory As String = projectDir & newAssemblyName & "\"
+        ' setup Log file
+        If EnableLog Then
+            Dim timestamp As String = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")
+            Dim fileName As String = $"Log_{timestamp}.txt"
+            _stream = New FileStream(logPath & fileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read)
+            _writer = New StreamWriter(_stream)
+            _writer.AutoFlush = True
+        End If
 
-        TB_FileName.Text = oAsmFileName
-        TB_NewAssemblyName.Text = GetComponentName(oAsmDoc)
+
+        ' we have to set the default prefix and suffix textboxes before assembly object setup
+        ' because the assembly object setup references these values
+        TB_Prefix.Text = defaultPrefix
         TB_Suffix.Text = defaultSuffix
-        Label_NewAssmName.Text = "  :  " & newAssemblyName
-        LongTextboxWrite(TB_ProjDir, projectDir)
-        LongTextboxWrite(TB_newDir, newRootDirectory)
 
-        mainAsmObj.NewFilePath = newRootDirectory
-        mainAsmObj.NewName = newAssemblyName
+        'create and setup the AssemblyCopyObject
+        rootAssemblyObject = New AssemblyCopyObject(Me, _invApp)
+        rootAssemblyObject.InitialSetup()
+        If EnableLog Then
+            rootAssemblyObject.GenerateSetupLog()
+        End If
+
+
+        TB_FileName.Text = rootAssemblyObject.OriginalName & ".iam"
+        ' by default the new assembly name is the same as the original
+        ' this is just the middle of the name not including prefix and suffix
+        TB_NewAssemblyName.Text = rootAssemblyObject.OriginalName
+
+        Label_NewAssmName.Text = "  :  " & rootAssemblyObject.NewName
+        LongTextboxWrite(TB_ProjDir, rootAssemblyObject.GetProjectDirectory(_invApp))
+        LongTextboxWrite(TB_newDir, rootAssemblyObject.NewRootDirectory)
 
         ' setup the form layout after assigning values
         FormLayoutSetup(True)
 
-        oAsmCompDef = oAsmDoc.ComponentDefinition
+        ' setup tree views
+        TV_oComponent.Nodes.Add(rootAssemblyObject.OriginalTreeNode)
+        TV_nComponent.Nodes.Add(rootAssemblyObject.NewTreeNode)
 
-        mainAsmObj = AssemblyObjSetup(oAsmDoc, mainAsmObj)
-        mainAsmObj.NewName = newAssemblyName
+    End Sub
 
-        ' setup the original assembly object tree view
-        Dim oTreeView = TV_oComponent
-        SetupTreeView(oTreeView, mainAsmObj, False)
+    Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        MyBase.OnFormClosing(e)
+        _stream.Close()
+        ' _writer.Close()
+    End Sub
 
-        ' setup the new assembly object
-        ' to start the new assembly is a copy of the original
-        ' newAsmObj = AssemblyObjSetup(oAsmDoc, newAsmObj)
-        ' newAsmObj.OriginalName = 
+    Public Sub Log(message As String, Optional ByRef numTabs As Integer = 0, Optional ByRef numLines As Integer = 0)
+        If EnableLog Then
+            Dim x As Integer = 0
+            While x < numTabs
+                message = vbTab & message
+                x += 1
+            End While
 
-        Dim nTreeView = TV_nComponent
-        SetupTreeView(nTreeView, mainAsmObj, True)
+            _writer.WriteLine(message)
+
+            x = 0
+            While x < numLines
+                _writer.WriteLine("")
+                x += 1
+            End While
+        End If
+
+    End Sub
+
+
+
+
+
+#Region "Form Text Controls"
+
+    ''' <summary>
+    ''' Updates the new assembly name label and then calls for the resizing of the UI in that row
+    ''' </summary>
+    ''' <param name="assmName"></param>
+    Private Sub ChangeNewAssemblyNameLabel(ByRef assmName As String)
+        Label_NewAssmName.Text = "  :  " & assmName
+        ResizeAssemblyNameLayout()
+    End Sub
+
+    Private Sub PrefixTB_TextChanged(sender As Object, e As EventArgs) Handles TB_Prefix.TextChanged
+        UpdateNewFileName()
+    End Sub
+
+    Private Sub TB_NewAssemblyName_TextChanged(sender As Object, e As EventArgs) Handles TB_NewAssemblyName.TextChanged
+        UpdateNewFileName()
+    End Sub
+
+    Private Sub TB_Suffix_TextChanged(sender As Object, e As EventArgs) Handles TB_Suffix.TextChanged
+        UpdateNewFileName()
+    End Sub
+
+    Private Sub UpdateNewFileName()
+
+        If rootAssemblyObject Is Nothing Then
+            ' this happens on the initial load
+        Else
+            Dim asmName As String = TB_Prefix.Text & TB_NewAssemblyName.Text & TB_Suffix.Text
+            Label_NewAssmName.Text = "  :  " & asmName
+            ResizeAssemblyNameLayout()
+            rootAssemblyObject.NewName = asmName
+            TB_newDir.Text = rootAssemblyObject.NewRootDirectory
+            ResetCarets()
+        End If
 
 
     End Sub
 
-    Private Sub AssemblyCopyToolForm_Resize(sender As Object, e As EventArgs) Handles Me.Resize
-        FormLayoutSetup(False)
-        ResetCarets()
+#End Region
+
+
+#Region "Button Clicks"
+
+    Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
+        rootAssemblyObject.CreateNewFiles(dryrun:=False)
+        rootAssemblyObject.ReplaceOccurences()
     End Sub
 
+    Private Sub NewDirButton_Click(sender As Object, e As EventArgs) Handles newDirButton.Click
+        Using NewDirectoryFolderBrowser As New FolderBrowserDialog()
+            NewDirectoryFolderBrowser.SelectedPath = newDirectory
+            If NewDirectoryFolderBrowser.ShowDialog() = DialogResult.OK Then
+                newDirectory = NewDirectoryFolderBrowser.SelectedPath & "\"
+                TB_newDir.Text = newDirectory
+            End If
+        End Using
+    End Sub
+
+#End Region
+
+#Region "Form Control Functions"
     Private Sub FormLayoutSetup(ByRef initialLayout As Boolean)
         Dim clientWidth As Integer = Me.ClientSize.Width
         Dim clientHeight As Integer = Me.ClientSize.Height
@@ -99,8 +185,6 @@ Friend Class AssemblyCopyToolForm
 
         'stuff you don't want to scale with resize
         If initialLayout Then
-            DB("Client Width: " & clientWidth.ToString)
-            DB("Client Height: " & clientHeight.ToString)
 
             Label1.Height = standardHeight
             Label1.Left = CInt(labelRightEdge - Label1.Width)
@@ -157,6 +241,9 @@ Friend Class AssemblyCopyToolForm
         CopyButton.Left = CInt(clientWidth / 2) - CopyButton.Width / 2
         CopyButton.Top = CInt(clientHeight / 14) * 13
 
+        TestButton.Left = CopyButton.Left + CopyButton.Width + medium_gap
+        TestButton.Top = CopyButton.Top
+
         Dim newDirLabelTop As Integer = TV_oComponent.Top + TV_oComponent.Height + medium_gap * 1.5
         Label3.Top = newDirLabelTop
 
@@ -172,20 +259,14 @@ Friend Class AssemblyCopyToolForm
         ResetCarets()
 
     End Sub
-
-    Private Sub NewDirButton_Click(sender As Object, e As EventArgs) Handles newDirButton.Click
-        Using NewDirectoryFolderBrowser As New FolderBrowserDialog()
-            NewDirectoryFolderBrowser.SelectedPath = newDirectory
-            If NewDirectoryFolderBrowser.ShowDialog() = DialogResult.OK Then
-                newDirectory = NewDirectoryFolderBrowser.SelectedPath & "\"
-                TB_newDir.Text = newDirectory
-            End If
-        End Using
+    Private Sub ResetCarets()
+        MoveCaret(TB_ProjDir)
+        MoveCaret(TB_newDir)
     End Sub
 
-    Private Sub ChangeNewAssemblyNameLabel(ByRef assmName As String)
-        Label_NewAssmName.Text = "  :  " & assmName
-        ResizeAssemblyNameLayout()
+    Private Sub AssemblyCopyToolForm_Resize(sender As Object, e As EventArgs) Handles Me.Resize
+        FormLayoutSetup(False)
+        ResetCarets()
     End Sub
 
     Private Sub ResizeAssemblyNameLayout()
@@ -207,89 +288,34 @@ Friend Class AssemblyCopyToolForm
         Label_NewAssmName.Left = clientWidth - medium_gap - Label_NewAssmName.Width
     End Sub
 
-    Private Sub PrefixTB_TextChanged(sender As Object, e As EventArgs) Handles TB_Prefix.TextChanged
-        UpdateMainAssemblyNewName()
+    ''' <summary>
+    ''' Writes text in a textbox and scrolls to the end
+    ''' </summary>
+    ''' <param name="textBox"></param>
+    ''' <param name="msg"></param>
+
+    Sub LongTextboxWrite(ByRef textBox As System.Windows.Forms.TextBox, ByRef msg As String)
+        textBox.Text = msg
+        textBox.SelectionStart = textBox.Text.Length
+        textBox.SelectionLength = 0
+        textBox.ScrollToCaret()
+    End Sub
+    Sub MoveCaret(ByRef textBox As System.Windows.Forms.TextBox)
+        textBox.SelectionStart = 0
+        textBox.SelectionLength = 0
+        textBox.ScrollToCaret()
+        textBox.SelectionStart = textBox.Text.Length
+        textBox.SelectionLength = 0
+        textBox.ScrollToCaret()
     End Sub
 
-    Private Sub TB_NewAssemblyName_TextChanged(sender As Object, e As EventArgs) Handles TB_NewAssemblyName.TextChanged
-        UpdateMainAssemblyNewName()
-    End Sub
-
-    Private Sub TB_Suffix_TextChanged(sender As Object, e As EventArgs) Handles TB_Suffix.TextChanged
-        UpdateMainAssemblyNewName()
-    End Sub
-
-    Private Sub UpdateMainAssemblyNewName()
-        Dim newRootDirectory As String = TB_newDir.Text
-        If newRootDirectory = "" Then
-            'this happens on initial load
-        Else
-            Dim newName As String = TB_Prefix.Text & TB_NewAssemblyName.Text & TB_Suffix.Text
-            Dim dirString As String = newRootDirectory
-            'you have to do it twice to get rid of the old file name
-            dirString = dirString.Substring(0, dirString.LastIndexOf("\"))
-            dirString = dirString.Substring(0, dirString.LastIndexOf("\") + 1) & newName & "\"
-            newRootDirectory = dirString
-            TB_newDir.Text = newRootDirectory
-            mainAsmObj.NewName = newName
-            mainAsmObj.NewTreeNode.Text = newName
-            mainAsmObj.NewFilePath = newRootDirectory
-            ResetCarets()
-        End If
-
-    End Sub
-
-    Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
-        SetupFilePaths(mainAsmObj, mainAsmObj.NewFilePath)
-        CopyAssemblyFile(mainAsmObj)
-        Dim newAssemblyDocument As AssemblyDocument = _invApp.Documents.Open(mainAsmObj.NewFullFileName)
-        ReplaceAssemblyComponents(mainAsmObj, newAssemblyDocument, True)
-    End Sub
-
-    Sub SetupTreeView(ByRef treeView As System.Windows.Forms.TreeView, ByRef asmObj As InvtAssemblyObj, ByRef newAsm As Boolean)
-        treeView.Nodes.Clear()
-        Dim rootNode As TreeNode
-        If newAsm Then
-            rootNode = treeView.Nodes.Add(asmObj.NewName)
-            asmObj.NewTreeNode = rootNode
-        Else
-            rootNode = treeView.Nodes.Add(asmObj.OriginalName)
-        End If
-        AddSubNodes(rootNode, asmObj, newAsm)
-        treeView.ExpandAll()
-    End Sub
-
-    Sub AddSubNodes(ByRef parentNode As TreeNode, ByRef asmObj As InvtAssemblyObj, ByRef newAsm As Boolean)
-        Dim newNode As TreeNode
-        For Each comp As InvtComponentObj In asmObj.AssemblyComponents
-            'newNode = parentNode.Nodes.Add(comp.Name)
-            If comp.Type = "Assembly" Then
-                If newAsm Then
-                    newNode = parentNode.Nodes.Add(comp.AssemblyObject.NewName)
-                    comp.AssemblyObject.NewTreeNode = newNode
-                Else
-                    newNode = parentNode.Nodes.Add(comp.AssemblyObject.OriginalName)
-                End If
-
-                AddSubNodes(newNode, comp.AssemblyObject, newAsm)
-
-            ElseIf comp.Type = "Part" Then
-                If newAsm Then
-                    newNode = parentNode.Nodes.Add(comp.PartObject.NewName)
-                    comp.PartObject.NewTreeNode = newNode
-                Else
-                    newNode = parentNode.Nodes.Add(comp.PartObject.OriginalName)
-                End If
-
-            End If
-        Next
+    Private Sub TestButton_Click(sender As Object, e As EventArgs) Handles TestButton.Click
+        ReadFrameAttribute(_invApp.ActiveDocument)
     End Sub
 
 
-    Private Sub ResetCarets()
-        MoveCaret(TB_ProjDir)
-        MoveCaret(TB_newDir)
-    End Sub
+#End Region
+
 
 End Class
 

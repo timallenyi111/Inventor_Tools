@@ -38,6 +38,7 @@ Partial Class AssemblyCopyToolForm
         TB_Suffix = New TextBox()
         TB_Prefix = New TextBox()
         Label_NewAssmName = New Label()
+        TestButton = New Button()
         SuspendLayout()
         ' 
         ' Label1
@@ -93,6 +94,7 @@ Partial Class AssemblyCopyToolForm
         ' TV_nComponent
         ' 
         TV_nComponent.BorderStyle = BorderStyle.FixedSingle
+        TV_nComponent.LabelEdit = True
         TV_nComponent.Location = New Point(712, 150)
         TV_nComponent.Name = "TV_nComponent"
         TV_nComponent.Size = New Size(662, 700)
@@ -101,7 +103,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' CopyButton
         ' 
-        CopyButton.Font = New Font("Calibri", 14.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        CopyButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         CopyButton.Location = New Point(615, 1300)
         CopyButton.Name = "CopyButton"
         CopyButton.Size = New Size(170, 70)
@@ -186,11 +188,22 @@ Partial Class AssemblyCopyToolForm
         Label_NewAssmName.Text = "  = 1_Default Name_2"
         Label_NewAssmName.TextAlign = ContentAlignment.MiddleLeft
         ' 
+        ' TestButton
+        ' 
+        TestButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        TestButton.Location = New Point(806, 1300)
+        TestButton.Name = "TestButton"
+        TestButton.Size = New Size(170, 70)
+        TestButton.TabIndex = 24
+        TestButton.Text = "Test"
+        TestButton.UseVisualStyleBackColor = True
+        ' 
         ' AssemblyCopyToolForm
         ' 
-        AutoScaleDimensions = New SizeF(12.0F, 29.0F)
+        AutoScaleDimensions = New SizeF(12F, 29F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1400, 1400)
+        Controls.Add(TestButton)
         Controls.Add(Label_NewAssmName)
         Controls.Add(TB_Prefix)
         Controls.Add(TB_Suffix)
@@ -206,7 +219,7 @@ Partial Class AssemblyCopyToolForm
         Controls.Add(TB_ProjDir)
         Controls.Add(Label2)
         Controls.Add(Label1)
-        Font = New Font("Calibri", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        Font = New Font("Calibri", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         Margin = New Padding(3, 4, 3, 4)
         Name = "AssemblyCopyToolForm"
         Text = "Assembly Copy Tool"
@@ -230,5 +243,6 @@ Partial Class AssemblyCopyToolForm
     Friend WithEvents TB_Suffix As TextBox
     Friend WithEvents TB_Prefix As TextBox
     Friend WithEvents Label_NewAssmName As Label
+    Friend WithEvents TestButton As Button
 
 End Class
