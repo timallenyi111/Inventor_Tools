@@ -2,10 +2,7 @@
 Imports System.Windows.Forms
 Imports System.IO
 
-' part list
-' frame list
-' assembly list
-' treenode
+
 
 ''' <summary>
 ''' This stores all of the information necessary to make a copy of an assembly
@@ -72,7 +69,14 @@ Friend Class AssemblyCopyObject
                     ' perform sub assembly setup
 
                     Dim curAsmObject As New AssemblyCopyObject(_form, _invApp)
-                    curAsmObject.InitialSetup(curOcc, nRootDirectory, oTreeNode, nTreeNode)
+                    If CheckIfOccurenceIsFrame(curOcc) Then
+                        ' this is a frame assembly so we need to set the frame directory
+                        Dim frameRootDirectory As String = nRootDirectory + nTreeNode.Text + "\Frame\"
+                        curAsmObject.InitialSetup(curOcc, frameRootDirectory, oTreeNode, nTreeNode)
+                    Else
+                        curAsmObject.InitialSetup(curOcc, nRootDirectory, oTreeNode, nTreeNode)
+                    End If
+                    Debug.WriteLine(curAsmObject.NewFullFileName)
                     subAsyList.Add(curAsmObject)
                 Else
                     _form.Log(curOcc._DisplayName & " was a duplicate")
@@ -108,7 +112,6 @@ Friend Class AssemblyCopyObject
     End Sub
 
     Sub SetNewProperties(Optional ByRef nParentNode As TreeNode = Nothing)
-
         If nParentNode Is Nothing Then
             ' this is the root assembly
 
@@ -117,11 +120,29 @@ Friend Class AssemblyCopyObject
             nTreeNode = New TreeNode(nAsyName)
         Else
             ' this is a subassembly
-            nAsyName = oAsyName
-            nFullFileName = nRootDirectory & nAsyName & ".iam"
-            nTreeNode = nParentNode.Nodes.Add(nAsyName)
+            If _subType = "Frame" Then
+                nAsyName = GenerateNewFrameName(oAsyName)
+                nFullFileName = nRootDirectory & nAsyName & ".iam"
+                nTreeNode = nParentNode.Nodes.Add(nAsyName)
+            Else
+                nAsyName = oAsyName
+                nFullFileName = nRootDirectory & nAsyName & ".iam"
+                nTreeNode = nParentNode.Nodes.Add(nAsyName)
+            End If
+
         End If
     End Sub
+
+    Private Function GenerateNewFrameName(ByRef frameName As String) As String
+        Dim nFrameName As String = "Frame "
+        Dim rnd As New Random
+        Dim count = 0
+        While count < 13
+            nFrameName = nFrameName + rnd.Next(0, 9).ToString
+            count += 1
+        End While
+        Return nFrameName
+    End Function
 
     ''' <summary>
     ''' returns an assembly name based on the original file name without the .iam

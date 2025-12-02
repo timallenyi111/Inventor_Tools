@@ -155,7 +155,6 @@ Friend Class AssemblyCopyToolForm
 #End Region
 
 
-
 #Region "Button Clicks"
 
     Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
