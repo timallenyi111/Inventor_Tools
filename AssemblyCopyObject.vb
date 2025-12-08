@@ -387,14 +387,26 @@ Friend Class AssemblyCopyObject
 
         'update the root directory based on changes since load
         If nRootDirectory Is Nothing Then
-            'this is the the root directory
+            'this is the the root directory and the sub assemblies don't have access to the form
             nRootDirectory = _form.TB_newDir.Text
-            nAsyName = NewTreeNode.Text
-            nFullFileName = nRootDirectory & nAsyName & ".iam"
-        Else
-
         End If
 
+        nAsyName = NewTreeNode.Text
+        nFullFileName = nRootDirectory & nAsyName & ".iam"
+
+        For Each part As InvtPartObj In partList
+            part.UpdateNewProperties(nRootDirectory)
+        Next
+
+        For Each subAsy As AssemblyCopyObject In subAsyList
+            If subAsy.SubType Is "Frame" Then
+                'frame assemblies have a different root directory
+                Dim frameRootDirectory As String = nRootDirectory + nAsyName + "\Frame\"
+                subAsy.UpdateNewProperties(frameRootDirectory)
+            Else
+                subAsy.UpdateNewProperties(nRootDirectory)
+            End If
+        Next
 
 
 
