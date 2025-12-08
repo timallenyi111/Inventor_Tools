@@ -107,4 +107,9 @@
         partName = partName.Substring(0, partName.Length - 4)
         Return partName
     End Function
+
+    Sub UpdateNewProperties(ByVal rootDirectory As String)
+        nPrtName = nTreeNode.Text
+        nFilePath = rootDirectory
+    End Sub
 End Class

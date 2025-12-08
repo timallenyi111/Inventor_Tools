@@ -158,6 +158,7 @@ Friend Class AssemblyCopyToolForm
 #Region "Button Clicks"
 
     Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
+        rootAssemblyObject.UpdateNewProperties()
         rootAssemblyObject.CreateNewFiles(dryrun:=False)
         rootAssemblyObject.ReplaceOccurences()
     End Sub
@@ -293,7 +294,6 @@ Friend Class AssemblyCopyToolForm
     ''' </summary>
     ''' <param name="textBox"></param>
     ''' <param name="msg"></param>
-
     Sub LongTextboxWrite(ByRef textBox As System.Windows.Forms.TextBox, ByRef msg As String)
         textBox.Text = msg
         textBox.SelectionStart = textBox.Text.Length

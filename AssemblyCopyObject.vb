@@ -277,6 +277,7 @@ Friend Class AssemblyCopyObject
 #Region "File Copy Functions"
     Sub CreateNewFiles(Optional dryrun As Boolean = False)
 
+
         'copy the root assembly
         If dryrun Then
             CopyFile_DRYRUN(oFullFileName, nFullFileName)
@@ -313,30 +314,6 @@ Friend Class AssemblyCopyObject
             _form.Log("!!!!!!! FILE SKIPPED BECAUSE IT ALREADY EXISTS !!!!!!!")
         Else
             System.IO.File.Copy(oFile, nFile, False)
-            _form.Log("COPY SUCCESSFUL", numTabs:=1, numLines:=1)
-        End If
-    End Sub
-
-    ''' <summary>
-    ''' creates a log file of the copy but doesn't execute any file operations
-    ''' </summary>
-    ''' <param name="oFile"></param>
-    ''' <param name="nFile"></param>
-    Private Sub CopyFile_DRYRUN(oFile As String, nFile As String)
-        _form.Log("copying file: " & oFile)
-        Dim nFilePath As String = nFile.Substring(0, nFile.LastIndexOf("\"))
-        _form.Log("New File Path: " & nFilePath, numTabs:=1)
-        'check if the new directory exists and if it doesn't create one.
-        If Directory.Exists(nFilePath) = False Then
-            'Directory.CreateDirectory(nFilePath)
-            _form.Log("New Directory Created")
-        End If
-
-        'check if new file already exists, if so tell them about it
-        If System.IO.File.Exists(nFile) Then
-            _form.Log("!!!!!!! FILE SKIPPED BECAUSE IT ALREADY EXISTS !!!!!!!")
-        Else
-            'System.IO.File.Copy(oFile, nFile, False)
             _form.Log("COPY SUCCESSFUL", numTabs:=1, numLines:=1)
         End If
     End Sub
@@ -400,6 +377,43 @@ Friend Class AssemblyCopyObject
             End If
         End If
     End Sub
+
+    ''' <summary>
+    ''' 'update the "new properties" based on changes to the form since load
+    ''' </summary>
+    Sub UpdateNewProperties(Optional ByVal nRootDirectory = Nothing)
+        'assembly already has its node from the original setup so we can just reference that for updates
+        'the first run through is the root assembly so we need to add the prefix and suffix
+
+        'update the root directory based on changes since load
+        If nRootDirectory Is Nothing Then
+            'this is the the root directory and the sub assemblies don't have access to the form
+            nRootDirectory = _form.TB_newDir.Text
+        End If
+
+        nAsyName = NewTreeNode.Text
+        nFullFileName = nRootDirectory & nAsyName & ".iam"
+
+        For Each part As InvtPartObj In partList
+            part.UpdateNewProperties(nRootDirectory)
+        Next
+
+        For Each subAsy As AssemblyCopyObject In subAsyList
+            If subAsy.SubType Is "Frame" Then
+                'frame assemblies have a different root directory
+                Dim frameRootDirectory As String = nRootDirectory + nAsyName + "\Frame\"
+                subAsy.UpdateNewProperties(frameRootDirectory)
+            Else
+                subAsy.UpdateNewProperties(nRootDirectory)
+            End If
+        Next
+
+
+
+    End Sub
+#End Region
+
+#Region "Frame Copy Functions"
 
     ''' <summary>
     ''' Replaces the frame assembly component along with all of its occurences
@@ -480,6 +494,7 @@ Friend Class AssemblyCopyObject
         Return skeletonOcc
     End Function
 
+
     ''' <summary>
     ''' Get the integer for the start of the skeleton id in the frame assembly attribute value
     ''' </summary>
@@ -492,6 +507,7 @@ Friend Class AssemblyCopyObject
         Return skelIDStart
     End Function
 
+
     ''' <summary>
     ''' Gets the integer for the end of the skeleton id in the frame assembly attribute value
     ''' </summary>
@@ -503,6 +519,7 @@ Friend Class AssemblyCopyObject
         Dim skelIdEnd As Integer = skelIdStart + InStr(skelId, """") - 1
         Return skelIdEnd
     End Function
+
 
     ''' <summary>
     ''' Replaces everything after the final "-" in the original skeleton id with random integers
@@ -524,7 +541,38 @@ Friend Class AssemblyCopyObject
         Return newSkelId
     End Function
 
+
+
 #End Region
+
+#Region "Dry Run Functions"
+
+    ''' <summary>
+    ''' creates a log file of the copy but doesn't execute any file operations
+    ''' </summary>
+    ''' <param name="oFile"></param>
+    ''' <param name="nFile"></param>
+    Private Sub CopyFile_DRYRUN(oFile As String, nFile As String)
+        _form.Log("copying file: " & oFile)
+        Dim nFilePath As String = nFile.Substring(0, nFile.LastIndexOf("\"))
+        _form.Log("New File Path: " & nFilePath, numTabs:=1)
+        'check if the new directory exists and if it doesn't create one.
+        If Directory.Exists(nFilePath) = False Then
+            'Directory.CreateDirectory(nFilePath)
+            _form.Log("New Directory Created")
+        End If
+
+        'check if new file already exists, if so tell them about it
+        If System.IO.File.Exists(nFile) Then
+            _form.Log("!!!!!!! FILE SKIPPED BECAUSE IT ALREADY EXISTS !!!!!!!")
+        Else
+            'System.IO.File.Copy(oFile, nFile, False)
+            _form.Log("COPY SUCCESSFUL", numTabs:=1, numLines:=1)
+        End If
+    End Sub
+
+#End Region
+
 
 #Region "Properties"
     ReadOnly Property OriginalName As String
