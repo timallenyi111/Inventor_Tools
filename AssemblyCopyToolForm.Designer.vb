@@ -94,6 +94,8 @@ Partial Class AssemblyCopyToolForm
         ' TV_nComponent
         ' 
         TV_nComponent.BorderStyle = BorderStyle.FixedSingle
+        TV_nComponent.FullRowSelect = True
+        TV_nComponent.HideSelection = False
         TV_nComponent.LabelEdit = True
         TV_nComponent.Location = New Point(712, 150)
         TV_nComponent.Name = "TV_nComponent"

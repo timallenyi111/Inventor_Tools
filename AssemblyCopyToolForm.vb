@@ -23,6 +23,7 @@ Friend Class AssemblyCopyToolForm
     Dim defaultPrefix As String = ""
     Dim medium_gap As Integer = 10
     Dim labelRightEdge As Integer = 164
+    Dim highlightSet As Inventor.HighlightSet
 
     Private Sub AssemblyCopyFormLoad(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error Resume Next
@@ -36,6 +37,7 @@ Friend Class AssemblyCopyToolForm
         On Error GoTo 0
 
         oAsmDoc = _invApp.ActiveDocument
+        highlightSet = _invApp.ActiveDocument.CreateHighlightSet()
         If Err.Number Then
             MsgBox("A document must be open in Inventor.")
             End
@@ -85,6 +87,7 @@ Friend Class AssemblyCopyToolForm
     End Sub
 
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        highlightSet.Clear()
         MyBase.OnFormClosing(e)
         _stream.Close()
         ' _writer.Close()
@@ -171,6 +174,10 @@ Friend Class AssemblyCopyToolForm
                 TB_newDir.Text = newDirectory
             End If
         End Using
+    End Sub
+
+    Private Sub TestButton_Click(sender As Object, e As EventArgs) Handles TestButton.Click
+        rootAssemblyObject.AssignNodeTags()
     End Sub
 
 #End Region
@@ -308,11 +315,35 @@ Friend Class AssemblyCopyToolForm
         textBox.SelectionLength = 0
         textBox.ScrollToCaret()
     End Sub
+    
 
-    Private Sub TestButton_Click(sender As Object, e As EventArgs) Handles TestButton.Click
-        ReadFrameAttribute(_invApp.ActiveDocument)
+    ' When a node is clicked, select it and give the treeview focus so the highlight is visible
+    Private Sub TV_nComponent_NodeMouseClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles TV_nComponent.NodeMouseClick
+        highlightSet.Clear()
+        TV_nComponent.SelectedNode = e.Node
+        TV_nComponent.Focus()
+
+        Dim Ena As Boolean = True
+
+        If Ena Then
+            If TV_nComponent.SelectedNode.Parent Is Nothing Then
+                'this is a root assembly occurence
+
+            ElseIf TV_nComponent.SelectedNode.Parent Is rootAssemblyObject.NewTreeNode Then
+                'this is a component of the root assembly
+                For Each occ As ComponentOccurrence In TV_nComponent.SelectedNode.Tag
+                    highlightSet.AddItem(occ)
+                Next
+            Else
+                For Each occProx As ComponentOccurrenceProxy In TV_nComponent.SelectedNode.Tag
+                    highlightSet.AddItem(occProx)
+                Next
+            End If
+        End If
+
+
+        'rootAssemblyObject.HighlightOccurenceByNode(TV_nComponent.SelectedNode)
     End Sub
-
 
 #End Region
 

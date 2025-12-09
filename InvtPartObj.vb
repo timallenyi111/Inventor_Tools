@@ -1,4 +1,4 @@
-﻿Public Class InvtPartObj
+﻿Friend Class InvtPartObj
     Dim oPrtName As String
     Dim oFilePath As String
     Dim nPrtName As String
@@ -12,6 +12,7 @@
     Dim oPartOcc As Inventor.ComponentOccurrence
     Dim oTreeNode As TreeNode
     Dim nTreeNode As TreeNode
+    Dim duplicateOccurrenceList As List(Of Inventor.ComponentOccurrence)
 
     ReadOnly Property OriginalName As String
         Get
@@ -69,18 +70,21 @@
     End Property
 
 
-    Property NewTreeNode As TreeNode
+    ReadOnly Property NewTreeNode As TreeNode
         Get
-            Return tNode
+            Return nTreeNode
         End Get
-        Set(value As TreeNode)
-            tNode = value
-        End Set
     End Property
 
     ReadOnly Property NewFullFileName As String
         Get
             Return nFilePath & nPrtName & ".ipt"
+        End Get
+    End Property
+
+    ReadOnly Property DuplicateOccurrences As List(Of Inventor.ComponentOccurrence)
+        Get
+            Return duplicateOccurrenceList
         End Get
     End Property
 
@@ -94,6 +98,7 @@
         nPrtName = oPrtName ' For now.... we aren't changing the new names by default
         nFilePath = rootDirectory
         nTreeNode = ParentAssemblyNewNode.Nodes.Add(nPrtName)
+        duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
 
     End Sub
     ''' <summary>
@@ -111,5 +116,9 @@
     Sub UpdateNewProperties(ByVal rootDirectory As String)
         nPrtName = nTreeNode.Text
         nFilePath = rootDirectory
+    End Sub
+
+    Sub AddDuplicateOccurrence(ByRef dupOcc As Inventor.ComponentOccurrence)
+        duplicateOccurrenceList.Add(dupOcc)
     End Sub
 End Class

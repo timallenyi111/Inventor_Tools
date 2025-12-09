@@ -11,7 +11,7 @@ Friend Class AssemblyCopyObject
 
     Private ReadOnly _form As AssemblyCopyToolForm
     Private ReadOnly _invApp As Inventor.Application
-    Dim partList As List(Of InvtPartObj)
+    Dim prtList As List(Of InvtPartObj)
     Dim subAsyList As List(Of AssemblyCopyObject)
     Dim oAsyName As String
     Dim nAsyName As String
@@ -24,13 +24,19 @@ Friend Class AssemblyCopyObject
     Dim oCompOcc As ComponentOccurrence
     Dim _subType As String
     Dim projectDirectory As String
+    Dim hltSet As HighlightSet
+    Dim hltSets As HighlightSets
+    Dim duplicateOccurrenceList As List(Of Inventor.ComponentOccurrence)
 
     Public Sub New(form As AssemblyCopyToolForm, invApp As Inventor.Application)
         _form = form
         _invApp = invApp
 
-        partList = New List(Of InvtPartObj)
+        prtList = New List(Of InvtPartObj)
         subAsyList = New List(Of AssemblyCopyObject)
+        duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
+        'hltSet = _invApp.ActiveDocument.CreateHighlightSet()
+        'hltSets = _invApp.ActiveDocument.CreateHighlightSet()
     End Sub
 
 #Region "setup functions"
@@ -44,28 +50,30 @@ Friend Class AssemblyCopyObject
             ' define the root directory for the entire assembly
             nRootDirectory = SetDefaultRootDirectory()
             SetNewProperties()
+            hltSet = _invApp.ActiveDocument.CreateHighlightSet()
         Else
             ' this is a subassembly
             SetOriginalProperties(asyOcc.Definition.Document, asyOcc, oParentTreeNode)
             nRootDirectory = rootDirectory
             SetNewProperties(nParentTreeNode) ' sub assemblys don't automatically get the pre/suffix
+            'hltSet = oAsmDoc.CreateHighlightSet()
         End If
 
         _form.Log("", numLines:=1)
         _form.Log("***** " & oAsyName & " component setup *****")
         For Each curOcc As ComponentOccurrence In oAsmDoc.ComponentDefinition.Occurrences
             If curOcc.DefinitionDocumentType = DocumentTypeEnum.kPartDocumentObject Then
-                If CheckForDuplicateDocument(curOcc.Definition.Document) = False Then
+                If CheckForDuplicateDocument(curOcc) = False Then
                     ' perform part setup
                     Dim curPartObject As New InvtPartObj
                     curPartObject.InitialSetup(curOcc, nRootDirectory, oTreeNode, nTreeNode)
-                    partList.Add(curPartObject)
+                    prtList.Add(curPartObject)
                 Else
                     _form.Log(curOcc._DisplayName & " was a duplicate")
                 End If
 
             ElseIf curOcc.DefinitionDocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
-                If CheckForDuplicateDocument(curOcc.Definition.Document) = False Then
+                If CheckForDuplicateDocument(curOcc) = False Then
                     ' perform sub assembly setup
 
                     Dim curAsmObject As New AssemblyCopyObject(_form, _invApp)
@@ -83,6 +91,8 @@ Friend Class AssemblyCopyObject
                 End If
             End If
         Next
+
+        AssignNodeTags()
     End Sub
 
     ''' <summary>
@@ -102,7 +112,7 @@ Friend Class AssemblyCopyObject
         'if there is no parent occurence then it is the main assembly and so the first tree node has to be created
         If AsyOcc Is Nothing Then
             oTreeNode = New TreeNode(oAsyName)
-            subType = "Root"
+            SubType = "Root"
         Else
             If CheckIfOccurenceIsFrame(oCompOcc) Then
                 _subType = "Frame"
@@ -173,13 +183,16 @@ Friend Class AssemblyCopyObject
     ''' </summary>
     ''' <param name="doc"></param>
     ''' <returns></returns>
-    Function CheckForDuplicateDocument(ByRef doc As Inventor.Document) As Boolean
+    Function CheckForDuplicateDocument(ByRef occ As Inventor.ComponentOccurrence) As Boolean
+        Dim doc As Document = occ.Definition.Document
         Dim isDuplicate As Boolean = False
         If doc.DocumentType = DocumentTypeEnum.kPartDocumentObject Then
             ' this is a part so check the parts list
-            For Each part As InvtPartObj In partList
+            For Each part As InvtPartObj In prtList
                 If part.OriginalFullFileName = doc.FullFileName Then
                     isDuplicate = True
+                    part.AddDuplicateOccurrence(occ)
+                    'Debug.WriteLine("Found Duplicate Part: " & part.OriginalName)
                     Exit For
                 End If
             Next
@@ -188,6 +201,7 @@ Friend Class AssemblyCopyObject
             For Each asy As AssemblyCopyObject In subAsyList
                 If asy.OriginalFullFileName = doc.FullFileName Then
                     isDuplicate = True
+                    asy.AddDuplicateOccurrence(occ)
                     Exit For
                 End If
             Next
@@ -196,13 +210,24 @@ Friend Class AssemblyCopyObject
         Return isDuplicate
     End Function
 
+    Sub AddDuplicateOccurrence(ByRef dupOcc As Inventor.ComponentOccurrence)
+        duplicateOccurrenceList.Add(dupOcc)
+    End Sub
+
     Function CheckIfOccurenceIsFrame(ByRef compOcc As ComponentOccurrence) As Boolean
         Dim isFrame As Boolean = False
         For Each attSet As AttributeSet In compOcc.AttributeSets
             For Each atri As Inventor.Attribute In attSet
-                If atri.Value = "MasterFrameOcc" Then
-                    isFrame = True
+                'Debug.WriteLine("Attribute Value: " & atri.Value.ToString)
+                'Debug.WriteLine("atribute value type " & atri.Value.GetType.ToString)
+                If VarType(atri.Value) = vbString Then
+                    If atri.Value = "MasterFrameOcc" Then
+                        isFrame = True
+                        Debug.WriteLine(compOcc.Name & " is a frame assembly")
+                        Debug.WriteLine(atri.Value)
+                    End If
                 End If
+
             Next
         Next
         Return isFrame
@@ -225,10 +250,10 @@ Friend Class AssemblyCopyObject
             _form.Log("Default New File Name: " & nFullFileName, numTabs:=1, numLines:=1)
         End If
 
-        If partList.Count > 0 Then
+        If prtList.Count > 0 Then
             _form.Log("***** PARTS LIST ******")
             _form.Log("_______________________", numLines:=1)
-            For Each part As InvtPartObj In partList
+            For Each part As InvtPartObj In prtList
                 _form.Log(part.OriginalName & ": part added")
                 _form.Log("original file name: " & part.OriginalFullFileName, numTabs:=1)
                 _form.Log("new file name: " & part.NewFullFileName, numTabs:=1, numLines:=1)
@@ -259,7 +284,7 @@ Friend Class AssemblyCopyObject
 
 #End Region
 
-#Region "Update Functions"
+#Region "Misc. Functions"
     Sub NameChange()
         ' remove the last \
         nRootDirectory = nRootDirectory.Substring(0, nRootDirectory.LastIndexOf("\"))
@@ -270,6 +295,132 @@ Friend Class AssemblyCopyObject
 
         ' rename the treeview node
         nTreeNode.Text = nAsyName
+    End Sub
+
+
+
+    Sub AssignNodeTags()
+        For Each part As InvtPartObj In prtList
+            'parts in the root assembly
+            Dim partNode As System.Windows.Forms.TreeNode = part.NewTreeNode
+            'in the root assembly the component occurrence is the only thing you need for highlighting
+            Dim occList As New List(Of Inventor.ComponentOccurrence)
+            Dim occNames As New List(Of String) From {
+                part.OriginalComponentOccurence.Name
+            }
+            'Debug.WriteLine("Adding original occurrence name to search list: " & part.OriginalComponentOccurence.Name)
+            If part.DuplicateOccurrences.Count > 0 Then
+                For Each dupOcc As Inventor.ComponentOccurrence In part.DuplicateOccurrences
+                    occNames.Add(dupOcc.Name)
+                    Debug.WriteLine("Adding duplicate occurrence name to search list: " & dupOcc.Name)
+                Next
+            End If
+
+            For Each occName As String In occNames
+                For Each occ As Inventor.ComponentOccurrence In oAsmDoc.ComponentDefinition.Occurrences
+                    If occ.Name = occName Then
+                        occList.Add(occ)
+                        'Debug.WriteLine("Found matching occurrence proxy: " & occ.Name)
+                        Exit For
+                    End If
+                Next
+            Next
+
+            partNode.Tag = occList
+        Next
+
+        For Each subAsy As AssemblyCopyObject In subAsyList
+            'sub-assemblies in the root assembly
+            Dim subAsmNode As System.Windows.Forms.TreeNode = subAsy.NewTreeNode
+            'assemblies in the root assembly need a list of occurrences for highlighting
+            Dim occList As New List(Of Inventor.ComponentOccurrence)
+            Dim occNames As New List(Of String) From {
+                subAsy.OriginalComponentOccurrence.Name
+            }
+            Debug.WriteLine("Adding original occurrence name to search list: " & subAsy.OriginalComponentOccurrence.Name)
+            If subAsy.DuplicateOccurrences.Count > 0 Then
+                For Each dupOcc As Inventor.ComponentOccurrence In subAsy.DuplicateOccurrences
+                    occNames.Add(dupOcc.Name)
+                    'Debug.WriteLine("Adding duplicate occurrence name to search list: " & dupOcc.Name)
+                Next
+            End If
+
+            For Each occName As String In occNames
+                For Each occ As Inventor.ComponentOccurrence In oAsmDoc.ComponentDefinition.Occurrences
+                    If occ.Name = occName Then
+                        occList.Add(occ)
+                        'Debug.WriteLine("Found matching occurrence proxy: " & occ.Name)
+                        'now process the components in the subassembly
+                        SubAssemblyNodeTagSetup(occ.SubOccurrences, subAsy)
+                        Exit For
+                    End If
+                Next
+            Next
+            subAsmNode.Tag = occList
+        Next
+    End Sub
+
+    Private Sub SubAssemblyNodeTagSetup(ByRef occurrences As Inventor.ComponentOccurrences, ByVal subAsy As AssemblyCopyObject)
+
+        For Each part As InvtPartObj In subAsy.prtList
+            'setup part name list
+            Dim occNames As New List(Of String) From {
+                part.OriginalComponentOccurence.Name
+            }
+            If part.DuplicateOccurrences.Count > 0 Then
+                For Each dupOcc As Inventor.ComponentOccurrence In part.DuplicateOccurrences
+                    occNames.Add(dupOcc.Name)
+                Next
+            End If
+
+            Dim index As Integer = 1
+            Dim occProxyList As New List(Of Inventor.ComponentOccurrenceProxy)
+            For Each occName As String In occNames
+                While index <= occurrences.Count
+                    Dim occ As Inventor.ComponentOccurrenceProxy = occurrences.Item(index)
+                    If occ.Name = occName Then
+                        Debug.WriteLine("Found matching occurrence proxy: " & occ.Name)
+                        occProxyList.Add(occ)
+                        Exit While
+                    End If
+                    index += 1
+                End While
+            Next
+            part.NewTreeNode.Tag = occProxyList
+        Next
+
+        For Each asy As AssemblyCopyObject In subAsy.subAsyList
+            Dim occNames As New List(Of String) From {
+                asy.OriginalComponentOccurrence.Name
+            }
+            If asy.DuplicateOccurrences.Count > 0 Then
+                For Each dupOcc As Inventor.ComponentOccurrence In asy.DuplicateOccurrences
+                    occNames.Add(dupOcc.Name)
+                Next
+            End If
+
+            Dim index As Integer = 1
+            Dim occProxyList As New List(Of Inventor.ComponentOccurrenceProxy)
+            For Each occName As String In occNames
+                While index <= occurrences.Count
+                    Dim occ As Inventor.ComponentOccurrenceProxy = occurrences.Item(index)
+                    If occ.Name = occName Then
+                        Debug.WriteLine("Found matching occurrence proxy: " & occ.Name)
+                        occProxyList.Add(occ)
+                        'Process components in the sub-assembly
+                        'This will work for duplicate components because the name "component:1" will be the same for all duplicates
+                        SubAssemblyNodeTagSetup(occ.SubOccurrences, asy)
+                        Exit While
+                    End If
+                    index += 1
+                End While
+            Next
+
+            asy.NewTreeNode.Tag = occProxyList
+
+        Next
+
+
     End Sub
 
 #End Region
@@ -285,7 +436,7 @@ Friend Class AssemblyCopyObject
             CopyFile(oFullFileName, nFullFileName)
         End If
 
-        For Each part As InvtPartObj In partList
+        For Each part As InvtPartObj In prtList
             If dryrun Then
                 CopyFile_DRYRUN(part.OriginalFullFileName, part.NewFullFileName)
             Else
@@ -332,15 +483,15 @@ Friend Class AssemblyCopyObject
             Dim newAsmOccs As Inventor.ComponentOccurrences = newAsmDoc.ComponentDefinition.Occurrences
 
             'replace the parts in the root assembly
-            If partList.Count > 0 Then
-                For Each part As InvtPartObj In partList
+            If prtList.Count > 0 Then
+                For Each part As InvtPartObj In prtList
                     newAsmOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
                 Next
             End If
 
             If subAsyList.Count > 0 Then
                 For Each subAsy As AssemblyCopyObject In subAsyList
-                    Dim curOcc As ComponentOccurrence = newAsmOccs.ItemByName(subAsy.OriginalComponentOccurence.Name)
+                    Dim curOcc As ComponentOccurrence = newAsmOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
                     curOcc.Replace(subAsy.NewFullFileName, True)
                     If subAsy.SubType = "Frame" Then
                         subAsy.ReplaceFrame(curOcc)
@@ -354,8 +505,8 @@ Friend Class AssemblyCopyObject
         Else
             Dim subAsyOccs As ComponentOccurrences = asyOcc.Definition.Occurrences
             'replace the parts in the root assembly
-            If partList.Count > 0 Then
-                For Each part As InvtPartObj In partList
+            If prtList.Count > 0 Then
+                For Each part As InvtPartObj In prtList
                     subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
                 Next
             End If
@@ -363,7 +514,7 @@ Friend Class AssemblyCopyObject
             If subAsyList.Count > 0 Then
                 For Each subAsy As AssemblyCopyObject In subAsyList
                     'get the occurence of the current subAsy by searching for it by name using the original occurence name
-                    Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurence.Name)
+                    Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
 
                     'recall this sub by getting the occurence of the component to be replaced by 
                     curOcc.Replace(subAsy.NewFullFileName, True)
@@ -394,7 +545,7 @@ Friend Class AssemblyCopyObject
         nAsyName = NewTreeNode.Text
         nFullFileName = nRootDirectory & nAsyName & ".iam"
 
-        For Each part As InvtPartObj In partList
+        For Each part As InvtPartObj In prtList
             part.UpdateNewProperties(nRootDirectory)
         Next
 
@@ -444,8 +595,8 @@ Friend Class AssemblyCopyObject
 
         Dim subAsyOccs As ComponentOccurrences = frmOcc.Definition.Occurrences
         'replace the parts in the root assembly
-        If partList.Count > 0 Then
-            For Each part As InvtPartObj In partList
+        If prtList.Count > 0 Then
+            For Each part As InvtPartObj In prtList
                 subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
             Next
         End If
@@ -453,7 +604,7 @@ Friend Class AssemblyCopyObject
         If subAsyList.Count > 0 Then
             For Each subAsy As AssemblyCopyObject In subAsyList
                 'get the occurence of the current subAsy by searching for it by name using the original occurence name
-                Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurence.Name)
+                Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
 
                 'recall this sub by getting the occurence of the component to be replaced by 
                 curOcc.Replace(subAsy.NewFullFileName, True)
@@ -587,7 +738,7 @@ Friend Class AssemblyCopyObject
         End Get
     End Property
 
-    ReadOnly Property OriginalPartDocument As PartDocument
+    ReadOnly Property OriginalAsmDocument As AssemblyDocument
         Get
             Return oAsmDoc
         End Get
@@ -599,7 +750,7 @@ Friend Class AssemblyCopyObject
         End Get
     End Property
 
-    ReadOnly Property OriginalComponentOccurence As ComponentOccurrence
+    ReadOnly Property OriginalComponentOccurrence As ComponentOccurrence
         Get
             Return oCompOcc
         End Get
@@ -644,6 +795,24 @@ Friend Class AssemblyCopyObject
         Set(value As String)
             _subType = value
         End Set
+    End Property
+
+    ReadOnly Property PartList As List(Of InvtPartObj)
+        Get
+            Return prtList
+        End Get
+    End Property
+
+    ReadOnly Property DuplicateOccurrences As List(Of Inventor.ComponentOccurrence)
+        Get
+            Return duplicateOccurrenceList
+        End Get
+    End Property
+
+    ReadOnly Property HighlightSet As HighlightSet
+        Get
+            Return hltSet
+        End Get
     End Property
 
 #End Region
