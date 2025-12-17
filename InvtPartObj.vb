@@ -13,6 +13,7 @@
     Dim oTreeNode As TreeNode
     Dim nTreeNode As TreeNode
     Dim duplicateOccurrenceList As List(Of Inventor.ComponentOccurrence)
+    Dim _subType As String
 
     ReadOnly Property OriginalName As String
         Get
@@ -88,19 +89,35 @@
         End Get
     End Property
 
+    ReadOnly Property SubType As String
+        Get
+            Return _subType
+        End Get
+    End Property
+
     Sub InitialSetup(ByRef PartOcc As Inventor.ComponentOccurrence, ByRef rootDirectory As String,
-                     ByRef ParentAssemblyOriginalNode As TreeNode, ByRef ParentAssemblyNewNode As TreeNode)
+                     ByRef ParentAssemblyOriginalNode As TreeNode, ByRef ParentAssemblyNewNode As TreeNode,
+                     ByRef contentCenterPath As String)
+
         oPartOcc = PartOcc
         oPrtDoc = PartOcc.Definition.Document
         oFullFileName = oPrtDoc.FullFileName
         oPrtName = GetPartName(oFullFileName)
         oTreeNode = ParentAssemblyOriginalNode.Nodes.Add(oPrtName)
-        nPrtName = oPrtName ' For now.... we aren't changing the new names by default
-        nFilePath = rootDirectory
-        nTreeNode = ParentAssemblyNewNode.Nodes.Add(nPrtName)
-        duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
+        'check if this is a content center part
+        If oFullFileName.ToLower.StartsWith(contentCenterPath.ToLower) Then
+            _subType = "Content Center Part"
+            nTreeNode = ParentAssemblyNewNode.Nodes.Add(oPrtName)
+        Else
+            nPrtName = oPrtName ' For now.... we aren't changing the new names by default
+            nFilePath = rootDirectory
+            nTreeNode = ParentAssemblyNewNode.Nodes.Add(nPrtName)
+            duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
+        End If
+
 
     End Sub
+
     ''' <summary>
     ''' Returns a part name that is based on the original file name without the .ipt
     ''' </summary>

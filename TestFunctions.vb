@@ -1,8 +1,13 @@
-﻿Imports Inventor
+﻿Imports System.ComponentModel
+Imports System.Drawing.Design
+Imports System.IO
+Imports System.IO.IsolatedStorage
+Imports System.Runtime.CompilerServices
+Imports System.Runtime.Serialization
+Imports System.Security.Permissions
+Imports Inventor
 
 Module TestFunctions
-
-
 
     Sub LoadOccurrenceProxy(ByVal _invApp As Inventor.Application, ByRef rootAssembly As AssemblyCopyObject, ByVal form As AssemblyCopyToolForm)
         Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
@@ -34,5 +39,144 @@ Module TestFunctions
         End While
     End Sub
 
+    Sub ReadSelectSet(ByVal _invApp As Inventor.Application)
+        Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
+        Dim selectSet As Inventor.SelectSet = activeDoc.SelectSet
+        For i As Integer = 1 To selectSet.Count
+            Dim selectedObj As Object = selectSet.Item(i)
+            Dim type As Inventor.ObjectTypeEnum = selectSet.Item(i).Type
+            If TypeOf selectedObj Is Inventor.ComponentOccurrence Then
+                Dim occ As Inventor.ComponentOccurrence = selectedObj
+                Debug.WriteLine("Selected Occurrence: " & occ.Name)
+                ReadOccurrenceAttributes(occ)
+            ElseIf type = Inventor.ObjectTypeEnum.kSketch3DProxyObject Then
+                Dim sketchProxy As Inventor.Sketch3DProxy = selectedObj
+                Debug.WriteLine("3D Sketch Proxy")
+                For Each attSet As Inventor.AttributeSet In sketchProxy.AttributeSets
+                    Debug.WriteLine("Attribute Set: " & attSet.Name)
+                    For Each att As Inventor.Attribute In attSet
+                        Debug.WriteLine("  Attribute Name: " & att.Name & ", Value: " & att.Value)
+                    Next
+                Next
+            Else
+                Debug.WriteLine("Selected Object is: " & type.ToString)
+            End If
+        Next
+    End Sub
+
+    Sub ReadOccurrenceAttributes(ByRef occurrence As Inventor.ComponentOccurrence)
+
+        If occurrence.AttributeSets.Count > 0 Then
+            Debug.WriteLine(occurrence.Name)
+            For Each attSet As Inventor.AttributeSet In occurrence.AttributeSets
+                Debug.WriteLine("Attribute Set: " & attSet.Name)
+                For Each att As Inventor.Attribute In attSet
+                    Debug.WriteLine("  Attribute Name: " & att.Name & ", Value: " & att.Value)
+                Next
+                Debug.WriteLine("-----")
+            Next
+        End If
+
+    End Sub
+
+    Sub ReadOccurrenceDefinitionAttributes(ByRef occurrence As Inventor.ComponentOccurrence)
+
+        Dim occDef As Inventor.ComponentDefinition = occurrence.Definition
+        If occDef.AttributeSets.Count > 0 Then
+            Debug.WriteLine(occurrence.Name)
+            For Each attSet As Inventor.AttributeSet In occDef.AttributeSets
+                Debug.WriteLine("Attribute Set: " & attSet.Name)
+                For Each att As Inventor.Attribute In attSet
+                    Debug.WriteLine("  Attribute Name: " & att.Name & ", Value: " & att.Value.ToString)
+                Next
+                Debug.WriteLine("-----")
+            Next
+        End If
+
+    End Sub
+
+    Sub CreateAttributeLog(ByVal _invApp As Inventor.Application)
+        Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
+        Dim selectSet As Inventor.SelectSet = activeDoc.SelectSet
+
+        For i As Integer = 1 To selectSet.Count
+            Dim selectedObj As Object = selectSet.Item(i)
+            Dim type As Inventor.ObjectTypeEnum = selectSet.Item(i).Type
+            Debug.WriteLine("Selected Object Type: " & type.ToString)
+            If TypeOf selectedObj Is Inventor.ComponentOccurrence Then
+                Debug.WriteLine("Selected Component is a Component Occurence")
+
+                Dim occurrence As Inventor.ComponentOccurrence = selectedObj
+                Dim occDef As Inventor.ComponentDefinition = occurrence.Definition
+                Debug.WriteLine("Occurence Attribute Count: " & occurrence.AttributeSets.Count)
+                Debug.WriteLine("Occurrence Definition Attribute Count: " & occDef.AttributeSets.Count)
+
+                If occDef.AttributeSets.Count > 0 Or occurrence.AttributeSets.Count > 0 Then
+                    Debug.WriteLine("Creating Attribute Log")
+                    Dim attriLogPath As String = "C:\Users\TimAllen\source\repos\timallenyi111\Inventor_Tools\LogFiles\"
+                    Dim timestamp As String = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")
+                    Dim fileName As String = $"AttibuteLog_{timestamp}.txt"
+                    Dim _stream As FileStream
+                    Dim _writer As StreamWriter
+                    _stream = New FileStream(attriLogPath & fileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read)
+                    _writer = New StreamWriter(_stream)
+                    _writer.AutoFlush = True
+                    _writer.WriteLine(occurrence.Name)
+                    _writer.WriteLine("-----Occurrence Attributes-----")
+
+                    For Each attSet As Inventor.AttributeSet In occurrence.AttributeSets
+                        _writer.WriteLine("Attribute Set: " & attSet.Name)
+                        For Each att As Inventor.Attribute In attSet
+                            _writer.WriteLine("  Attribute Name: " & att.Name)
+                            _writer.WriteLine("  Value: ")
+                            For Each line In MultiLineAttributeValue(att.Value.ToString)
+                                _writer.WriteLine(vbTab & vbTab & line)
+                            Next
+                            _writer.WriteLine("")
+                            _writer.WriteLine("-------------")
+                            _writer.WriteLine("")
+                        Next
+                    Next
+
+                    _writer.WriteLine("-----Occurrence Definition Attributes-----")
+                    For Each attSet As Inventor.AttributeSet In occDef.AttributeSets
+                        _writer.WriteLine("Attribute Set: " & attSet.Name)
+                        For Each att As Inventor.Attribute In attSet
+                            _writer.WriteLine("  Attribute Name: " & att.Name)
+                            _writer.WriteLine("  Value: ")
+                            For Each line In MultiLineAttributeValue(att.Value.ToString)
+                                _writer.WriteLine(vbTab & vbTab & line)
+                            Next
+                            _writer.WriteLine("")
+                            _writer.WriteLine("-------------")
+                            _writer.WriteLine("")
+                        Next
+                    Next
+                    _stream.Close()
+                    Debug.WriteLine("Attribute File Complete")
+                End If
+
+            End If
+
+        Next
+
+
+    End Sub
+
+    Function MultiLineAttributeValue(ByRef attrValue As String) As List(Of String)
+        Dim valueList As New List(Of String)
+        Dim subString As String = ""
+        While attrValue.Length > 0
+            If attrValue.IndexOf(">") = -1 Then
+                valueList.Add(attrValue)
+                Exit While
+            End If
+            subString = attrValue.Substring(0, attrValue.IndexOf(">") + 1)
+            valueList.Add(subString)
+            attrValue = attrValue.Remove(0, subString.Length)
+            Debug.WriteLine("Remaining Length: " & attrValue.Length)
+        End While
+        Return valueList
+    End Function
 
 End Module

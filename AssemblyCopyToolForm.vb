@@ -14,8 +14,7 @@ Friend Class AssemblyCopyToolForm
     Public oAsmDoc As Inventor.AssemblyDocument
     Public _stream As FileStream
     Public _writer As StreamWriter
-    Dim logPath As String = "C:\Users\Tim\source\repos\Inventor_Tools\LogFiles\"
-    Dim EnableLog As Boolean = True
+
     Dim oAsmCompDef As AssemblyComponentDefinition
     Dim newDirectory As String
     Dim rootAssemblyObject As AssemblyCopyObject
@@ -24,6 +23,15 @@ Friend Class AssemblyCopyToolForm
     Dim medium_gap As Integer = 10
     Dim labelRightEdge As Integer = 164
     Dim highlightSet As Inventor.HighlightSet
+
+
+    '****************************
+#Region "Program Settings"
+    Dim logPath As String = "C:\Users\TimAllen\source\repos\timallenyi111\Inventor_Tools\LogFiles\"
+    Dim EnableLog As Boolean = False
+    Dim EnableNodeHighlighting As Boolean = False
+
+#End Region
 
     Private Sub AssemblyCopyFormLoad(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error Resume Next
@@ -54,6 +62,7 @@ Friend Class AssemblyCopyToolForm
             _writer.AutoFlush = True
         End If
 
+        Debug.WriteLine(_invApp.DesignProjectManager.ActiveDesignProject.ContentCenterPath)
 
         ' we have to set the default prefix and suffix textboxes before assembly object setup
         ' because the assembly object setup references these values
@@ -89,7 +98,11 @@ Friend Class AssemblyCopyToolForm
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
         highlightSet.Clear()
         MyBase.OnFormClosing(e)
-        _stream.Close()
+        If EnableLog Then
+            Log("Closing log file.")
+            _stream.Close()
+        End If
+
         ' _writer.Close()
     End Sub
 
@@ -177,7 +190,8 @@ Friend Class AssemblyCopyToolForm
     End Sub
 
     Private Sub TestButton_Click(sender As Object, e As EventArgs) Handles TestButton.Click
-        rootAssemblyObject.AssignNodeTags()
+        'ReadSelectSet(_invApp)
+        CreateAttributeLog(_invApp)
     End Sub
 
 #End Region

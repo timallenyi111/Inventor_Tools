@@ -11,39 +11,37 @@ Friend Class AssemblyCopyObject
 
     Private ReadOnly _form As AssemblyCopyToolForm
     Private ReadOnly _invApp As Inventor.Application
-    Dim prtList As List(Of InvtPartObj)
-    Dim subAsyList As List(Of AssemblyCopyObject)
-    Dim oAsyName As String
-    Dim nAsyName As String
-    Dim oFullFileName As String
-    Dim nFullFileName As String
-    Dim nRootDirectory As String
-    Dim oAsmDoc As AssemblyDocument
-    Dim oTreeNode As TreeNode
-    Dim nTreeNode As TreeNode
-    Dim oCompOcc As ComponentOccurrence
-    Dim _subType As String
-    Dim projectDirectory As String
-    Dim hltSet As HighlightSet
-    Dim hltSets As HighlightSets
-    Dim duplicateOccurrenceList As List(Of Inventor.ComponentOccurrence)
+    Private _contentCenterPath As String
+    Private prtList As List(Of InvtPartObj)
+    Private subAsyList As List(Of AssemblyCopyObject)
+    Private oAsyName As String
+    Private nAsyName As String
+    Private oFullFileName As String
+    Private nFullFileName As String
+    Private nRootDirectory As String
+    Private oAsmDoc As AssemblyDocument
+    Private oTreeNode As TreeNode
+    Private nTreeNode As TreeNode
+    Private oCompOcc As ComponentOccurrence
+    Private _subType As String
+    Private hltSet As HighlightSet
+    Private ReadOnly duplicateOccurrenceList As List(Of ComponentOccurrence)
 
     Public Sub New(form As AssemblyCopyToolForm, invApp As Inventor.Application)
         _form = form
         _invApp = invApp
+        _contentCenterPath = _invApp.DesignProjectManager.ActiveDesignProject.ContentCenterPath
 
         prtList = New List(Of InvtPartObj)
         subAsyList = New List(Of AssemblyCopyObject)
         duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
-        'hltSet = _invApp.ActiveDocument.CreateHighlightSet()
-        'hltSets = _invApp.ActiveDocument.CreateHighlightSet()
     End Sub
 
 #Region "setup functions"
     Sub InitialSetup(Optional asyOcc As ComponentOccurrence = Nothing, Optional rootDirectory As String = Nothing,
                      Optional oParentTreeNode As TreeNode = Nothing, Optional nParentTreeNode As TreeNode = Nothing)
 
-        ' this is the root assembly
+        'Check if the current assembly is the root assembly
         If asyOcc Is Nothing Then
             ' this is the root assembly         
             SetOriginalProperties(_invApp.ActiveDocument)
@@ -61,12 +59,16 @@ Friend Class AssemblyCopyObject
 
         _form.Log("", numLines:=1)
         _form.Log("***** " & oAsyName & " component setup *****")
+
+        'Perform the initial setup for all components in the assembly
         For Each curOcc As ComponentOccurrence In oAsmDoc.ComponentDefinition.Occurrences
+
             If curOcc.DefinitionDocumentType = DocumentTypeEnum.kPartDocumentObject Then
+                'ReadOccurrenceDefinitionAttributes(curOcc)
                 If CheckForDuplicateDocument(curOcc) = False Then
                     ' perform part setup
                     Dim curPartObject As New InvtPartObj
-                    curPartObject.InitialSetup(curOcc, nRootDirectory, oTreeNode, nTreeNode)
+                    curPartObject.InitialSetup(curOcc, nRootDirectory, oTreeNode, nTreeNode, _contentCenterPath)
                     prtList.Add(curPartObject)
                 Else
                     _form.Log(curOcc._DisplayName & " was a duplicate")
@@ -84,7 +86,7 @@ Friend Class AssemblyCopyObject
                     Else
                         curAsmObject.InitialSetup(curOcc, nRootDirectory, oTreeNode, nTreeNode)
                     End If
-                    Debug.WriteLine(curAsmObject.NewFullFileName)
+                    'Debug.WriteLine(curAsmObject.NewFullFileName)
                     subAsyList.Add(curAsmObject)
                 Else
                     _form.Log(curOcc._DisplayName & " was a duplicate")
@@ -92,6 +94,7 @@ Friend Class AssemblyCopyObject
             End If
         Next
 
+        'these node tags are used for highlighting the components in the assembly treeview
         AssignNodeTags()
     End Sub
 
@@ -216,6 +219,9 @@ Friend Class AssemblyCopyObject
 
     Function CheckIfOccurenceIsFrame(ByRef compOcc As ComponentOccurrence) As Boolean
         Dim isFrame As Boolean = False
+        If compOcc.AttributeSets.Count > 0 Then
+            'Debug.WriteLine("Assembly: " & compOcc.Name)
+        End If
         For Each attSet As AttributeSet In compOcc.AttributeSets
             For Each atri As Inventor.Attribute In attSet
                 'Debug.WriteLine("Attribute Value: " & atri.Value.ToString)
@@ -223,13 +229,19 @@ Friend Class AssemblyCopyObject
                 If VarType(atri.Value) = vbString Then
                     If atri.Value = "MasterFrameOcc" Then
                         isFrame = True
-                        Debug.WriteLine(compOcc.Name & " is a frame assembly")
-                        Debug.WriteLine(atri.Value)
+                        'Debug.WriteLine(compOcc.Name & " is a frame assembly")
+                        'Debug.WriteLine(atri.Value)
                     End If
                 End If
-
             Next
+            Dim spaces As Integer = 3
+            Dim i As Integer = 0
+            While i < spaces
+                'Debug.WriteLine("")
+                i += 1
+            End While
         Next
+        'Debug.WriteLine("*****")
         Return isFrame
     End Function
 
@@ -297,8 +309,6 @@ Friend Class AssemblyCopyObject
         nTreeNode.Text = nAsyName
     End Sub
 
-
-
     Sub AssignNodeTags()
         For Each part As InvtPartObj In prtList
             'parts in the root assembly
@@ -312,7 +322,7 @@ Friend Class AssemblyCopyObject
             If part.DuplicateOccurrences.Count > 0 Then
                 For Each dupOcc As Inventor.ComponentOccurrence In part.DuplicateOccurrences
                     occNames.Add(dupOcc.Name)
-                    Debug.WriteLine("Adding duplicate occurrence name to search list: " & dupOcc.Name)
+                    'Debug.WriteLine("Adding duplicate occurrence name to search list: " & dupOcc.Name)
                 Next
             End If
 
@@ -337,7 +347,7 @@ Friend Class AssemblyCopyObject
             Dim occNames As New List(Of String) From {
                 subAsy.OriginalComponentOccurrence.Name
             }
-            Debug.WriteLine("Adding original occurrence name to search list: " & subAsy.OriginalComponentOccurrence.Name)
+            'Debug.WriteLine("Adding original occurrence name to search list: " & subAsy.OriginalComponentOccurrence.Name)
             If subAsy.DuplicateOccurrences.Count > 0 Then
                 For Each dupOcc As Inventor.ComponentOccurrence In subAsy.DuplicateOccurrences
                     occNames.Add(dupOcc.Name)
@@ -427,8 +437,6 @@ Friend Class AssemblyCopyObject
 
 #Region "File Copy Functions"
     Sub CreateNewFiles(Optional dryrun As Boolean = False)
-
-
         'copy the root assembly
         If dryrun Then
             CopyFile_DRYRUN(oFullFileName, nFullFileName)
@@ -440,7 +448,13 @@ Friend Class AssemblyCopyObject
             If dryrun Then
                 CopyFile_DRYRUN(part.OriginalFullFileName, part.NewFullFileName)
             Else
-                CopyFile(part.OriginalFullFileName, part.NewFullFileName)
+                If part.SubType = "Content Center Part" Then
+                    'we don't want to copy content center parts
+                    _form.Log("Skipping Content Center Part: " & part.OriginalName)
+                Else
+                    CopyFile(part.OriginalFullFileName, part.NewFullFileName)
+                End If
+
             End If
         Next
 
@@ -723,7 +737,6 @@ Friend Class AssemblyCopyObject
     End Sub
 
 #End Region
-
 
 #Region "Properties"
     ReadOnly Property OriginalName As String

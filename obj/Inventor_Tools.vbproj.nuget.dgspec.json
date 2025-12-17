@@ -1,24 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Tim\\source\\repos\\Inventor_Tools\\Inventor_Tools.vbproj": {}
+    "C:\\Users\\TimAllen\\source\\repos\\timallenyi111\\Inventor_Tools\\Inventor_Tools.vbproj": {}
   },
   "projects": {
-    "C:\\Users\\Tim\\source\\repos\\Inventor_Tools\\Inventor_Tools.vbproj": {
+    "C:\\Users\\TimAllen\\source\\repos\\timallenyi111\\Inventor_Tools\\Inventor_Tools.vbproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Tim\\source\\repos\\Inventor_Tools\\Inventor_Tools.vbproj",
+        "projectUniqueName": "C:\\Users\\TimAllen\\source\\repos\\timallenyi111\\Inventor_Tools\\Inventor_Tools.vbproj",
         "projectName": "Inventor_Tools",
-        "projectPath": "C:\\Users\\Tim\\source\\repos\\Inventor_Tools\\Inventor_Tools.vbproj",
-        "packagesPath": "C:\\Users\\Tim\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Tim\\source\\repos\\Inventor_Tools\\obj\\",
+        "projectPath": "C:\\Users\\TimAllen\\source\\repos\\timallenyi111\\Inventor_Tools\\Inventor_Tools.vbproj",
+        "packagesPath": "C:\\Users\\TimAllen\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\TimAllen\\source\\repos\\timallenyi111\\Inventor_Tools\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\Tim\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Users\\TimAllen\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
@@ -68,7 +64,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
