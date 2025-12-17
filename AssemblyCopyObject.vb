@@ -541,7 +541,7 @@ Friend Class AssemblyCopyObject
                     If part.SubType IsNot "Content Center Part" Then
                         'This replaces all occurrences so no need to replace duplicates separately
                         Debug.WriteLine("Replacing part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
-                        _form.Label_CopyComplete.Text = "Replacing: " And part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
+                        _form.Label_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name
                         newAsmOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
                     End If
                 Next
@@ -551,7 +551,7 @@ Friend Class AssemblyCopyObject
             If subAsyList.Count > 0 Then
                 For Each subAsy As AssemblyCopyObject In subAsyList
                     Dim curOcc As ComponentOccurrence = newAsmOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
-                    _form.Label_CopyComplete.Text = "Replacing: " And subAsy.OriginalName & " with " & subAsy.NewFullFileName
+                    _form.Label_CopyComplete.Text = "Replacing: " & subAsy.OriginalName & " with " & subAsy.NewFullFileName
                     curOcc.Replace(subAsy.NewFullFileName, True)
                     If subAsy.SubType = "Frame" Then
                         subAsy.ReplaceFrame(curOcc)
@@ -570,7 +570,7 @@ Friend Class AssemblyCopyObject
                     If part.SubType IsNot "Content Center Part" Then
                         'This replaces all occurrences so no need to replace duplicates separately
                         Debug.WriteLine("Replacing part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
-                        _form.Label_CopyComplete.Text = "Replacing: " And part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
+                        _form.Label_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
                         subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
                     End If
                 Next
@@ -582,7 +582,7 @@ Friend Class AssemblyCopyObject
                     Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
 
                     'recall this sub by getting the occurence of the component to be replaced by
-                    _form.Label_CopyComplete.Text = "Replacing: " And subAsy.OriginalName & " with " & subAsy.NewFullFileName
+                    _form.Label_CopyComplete.Text = "Replacing: " & subAsy.OriginalName & " with " & subAsy.NewFullFileName
                     curOcc.Replace(subAsy.NewFullFileName, True)
                     If subAsy.SubType = "Frame" Then
                         subAsy.ReplaceFrame(curOcc)
@@ -670,7 +670,7 @@ Friend Class AssemblyCopyObject
                 If part.SubType IsNot "Content Center Part" Then
                     'This replaces all occurrences so no need to replace duplicates separately"
                     Debug.WriteLine("Replacing Frame part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
-                    _form.Label_CopyComplete.Text = "Replacing: " And part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
+                    _form.Label_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
                     subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
                 Else
                     Debug.WriteLine("Skipping Content Center Part: " & part.OriginalName)
@@ -685,7 +685,7 @@ Friend Class AssemblyCopyObject
                 Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
 
                 'recall this sub by getting the occurence of the component to be replaced by 
-                _form.Label_CopyComplete.Text = "Replacing: " And subAsy.OriginalName & " with " & subAsy.NewFullFileName
+                _form.Label_CopyComplete.Text = "Replacing: " & subAsy.OriginalName & " with " & subAsy.NewFullFileName
                 curOcc.Replace(subAsy.NewFullFileName, True)
                 If subAsy.SubType = "Frame" Then
                     subAsy.ReplaceFrame(curOcc)

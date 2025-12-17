@@ -106,7 +106,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' CopyButton
         ' 
-        CopyButton.Font = New Font("Calibri", 14.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        CopyButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         CopyButton.Location = New Point(615, 1300)
         CopyButton.Name = "CopyButton"
         CopyButton.Size = New Size(170, 70)
@@ -193,7 +193,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' TestButton
         ' 
-        TestButton.Font = New Font("Calibri", 14.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        TestButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         TestButton.Location = New Point(806, 1300)
         TestButton.Name = "TestButton"
         TestButton.Size = New Size(170, 70)
@@ -203,7 +203,6 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' Label_CopyComplete
         ' 
-        Label_CopyComplete.Anchor = AnchorStyles.Top
         Label_CopyComplete.AutoSize = True
         Label_CopyComplete.Location = New Point(621, 1235)
         Label_CopyComplete.Name = "Label_CopyComplete"
@@ -214,7 +213,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' AssemblyCopyToolForm
         ' 
-        AutoScaleDimensions = New SizeF(12.0F, 29.0F)
+        AutoScaleDimensions = New SizeF(12F, 29F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1400, 1400)
         Controls.Add(Label_CopyComplete)
@@ -234,7 +233,7 @@ Partial Class AssemblyCopyToolForm
         Controls.Add(TB_ProjDir)
         Controls.Add(Label2)
         Controls.Add(Label1)
-        Font = New Font("Calibri", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        Font = New Font("Calibri", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         Margin = New Padding(3, 4, 3, 4)
         Name = "AssemblyCopyToolForm"
         Text = "Assembly Copy Tool"
