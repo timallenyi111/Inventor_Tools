@@ -95,6 +95,29 @@ Module TestFunctions
 
     End Sub
 
+    Sub ReadDocumentAttributes(ByRef _invApp As Inventor.Application)
+        Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
+        Dim selectSet As Inventor.SelectSet = activeDoc.SelectSet
+        For i As Integer = 1 To selectSet.Count
+            Dim selectedObj As Object = selectSet.Item(i)
+            Dim type As Inventor.ObjectTypeEnum = selectSet.Item(i).Type
+            If TypeOf selectedObj Is Inventor.ComponentOccurrence Then
+                Dim doc As Inventor.AssemblyDocument = selectedObj.definition.Document
+                Debug.WriteLine("Selected Document: " & doc.DisplayName)
+                For Each attSet As Inventor.AttributeSet In doc.AttributeSets
+                    Debug.WriteLine("Attribute Set: " & attSet.Name)
+                    For Each att As Inventor.Attribute In attSet
+                        Debug.WriteLine("  Attribute Name: " & att.Name & ", Value: " & att.Value)
+                    Next
+                    Debug.WriteLine("-----")
+                Next
+            Else
+                Debug.WriteLine("Selected Object is: " & type.ToString)
+            End If
+        Next
+
+    End Sub
+
     Sub CreateAttributeLog(ByVal _invApp As Inventor.Application)
         Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
         Dim selectSet As Inventor.SelectSet = activeDoc.SelectSet
@@ -178,5 +201,23 @@ Module TestFunctions
         End While
         Return valueList
     End Function
+
+    Sub GetRootAssemblyAttributes(_invApp As Inventor.Application)
+        Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
+        'Dim rootOcc As Inventor.ComponentOccurrence = activeDoc.ComponentDefinition.Occurrences.Item(1)
+        Dim activeDocDef As Inventor.AssemblyComponentDefinition = activeDoc.ComponentDefinition
+        Debug.WriteLine("Root Assembly Attribute Sets Count: " & activeDoc.AttributeSets.Count)
+        Debug.WriteLine("Root Assembly Definition Atrribute Sets Count" & activeDocDef.AttributeSets.Count)
+        Debug.WriteLine("Root Assembly Document Descriptor Count: " & activeDoc.ReferencedDocumentDescriptors.Count)
+        For i As Integer = 1 To activeDoc.ReferencedDocumentDescriptors.Count
+            Dim docDesc As Inventor.DocumentDescriptor = activeDoc.ReferencedDocumentDescriptors.Item(i)
+            Debug.WriteLine(docDesc.DisplayName)
+            Dim objType As Inventor.DocumentTypeEnum = docDesc.ReferencedDocumentType
+            Debug.WriteLine(objType.ToString)
+        Next
+
+
+
+    End Sub
 
 End Module

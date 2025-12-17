@@ -83,6 +83,11 @@ Friend Class AssemblyCopyObject
                         ' this is a frame assembly so we need to set the frame directory
                         Dim frameRootDirectory As String = nRootDirectory + nTreeNode.Text + "\Frame\"
                         curAsmObject.InitialSetup(curOcc, frameRootDirectory, oTreeNode, nTreeNode)
+                        curAsmObject.SubType = "Frame"
+                    ElseIf CheckIfOccurrenceIsBoltedConnection(curOcc) Then
+                        Dim boltedConnectionDirectory As String = nRootDirectory + nTreeNode.Text + "\Design Accelerator\"
+                        curAsmObject.InitialSetup(curOcc, boltedConnectionDirectory, oTreeNode, nTreeNode)
+                        curAsmObject.SubType = "Bolted Connection"
                     Else
                         curAsmObject.InitialSetup(curOcc, nRootDirectory, oTreeNode, nTreeNode)
                     End If
@@ -222,6 +227,7 @@ Friend Class AssemblyCopyObject
         If compOcc.AttributeSets.Count > 0 Then
             'Debug.WriteLine("Assembly: " & compOcc.Name)
         End If
+
         For Each attSet As AttributeSet In compOcc.AttributeSets
             For Each atri As Inventor.Attribute In attSet
                 'Debug.WriteLine("Attribute Value: " & atri.Value.ToString)
@@ -234,17 +240,39 @@ Friend Class AssemblyCopyObject
                     End If
                 End If
             Next
-            Dim spaces As Integer = 3
-            Dim i As Integer = 0
-            While i < spaces
+
+            For i As Integer = 0 To 3
                 'Debug.WriteLine("")
-                i += 1
-            End While
+            Next
+
         Next
+
         'Debug.WriteLine("*****")
         Return isFrame
+
+
     End Function
 
+    Function CheckIfOccurrenceIsBoltedConnection(ByRef compOcc As ComponentOccurrence) As Boolean
+        Dim isBoltedConnection As Boolean = False
+        If compOcc.AttributeSets.Count > 0 Then
+            For Each attSet As AttributeSet In compOcc.AttributeSets
+                If attSet.Name = "FDesign" Then
+                    For Each atri As Inventor.Attribute In attSet
+                        If VarType(atri.Value) = vbString Then
+                            Dim atriValue As String = atri.Value
+                            If atriValue.IndexOf("CABoltCon") >= 0 Then
+                                isBoltedConnection = True
+                                Debug.WriteLine(compOcc.Name & " is a bolted connection")
+                            End If
+                        End If
+                    Next
+                End If
+            Next
+        End If
+
+        Return isBoltedConnection
+    End Function
     Sub GenerateSetupLog(Optional ByRef isRoot As Boolean = True)
         If isRoot Then
             _form.Log("", numLines:=4)
@@ -389,7 +417,7 @@ Friend Class AssemblyCopyObject
                 While index <= occurrences.Count
                     Dim occ As Inventor.ComponentOccurrenceProxy = occurrences.Item(index)
                     If occ.Name = occName Then
-                        Debug.WriteLine("Found matching occurrence proxy: " & occ.Name)
+                        'Debug.WriteLine("Found matching occurrence proxy: " & occ.Name)
                         occProxyList.Add(occ)
                         Exit While
                     End If
@@ -441,6 +469,7 @@ Friend Class AssemblyCopyObject
         If dryrun Then
             CopyFile_DRYRUN(oFullFileName, nFullFileName)
         Else
+
             CopyFile(oFullFileName, nFullFileName)
         End If
 
@@ -468,18 +497,20 @@ Friend Class AssemblyCopyObject
         _form.Log("copying file: " & oFile)
         Dim nFilePath As String = nFile.Substring(0, nFile.LastIndexOf("\"))
         _form.Log("New File Path: " & nFilePath, numTabs:=1)
+
         'check if the new directory exists and if it doesn't create one.
         If Directory.Exists(nFilePath) = False Then
             Directory.CreateDirectory(nFilePath)
             _form.Log("New Directory Created")
         End If
 
-        'check if new file already exists, if so tell them about it
+        'check if new file already exists, if so log it
         If System.IO.File.Exists(nFile) Then
             _form.Log("!!!!!!! FILE SKIPPED BECAUSE IT ALREADY EXISTS !!!!!!!")
         Else
             System.IO.File.Copy(oFile, nFile, False)
             _form.Log("COPY SUCCESSFUL", numTabs:=1, numLines:=1)
+            _form.Label_CopyComplete.Text = "Saving File: " & nFile
         End If
     End Sub
 
@@ -490,29 +521,43 @@ Friend Class AssemblyCopyObject
     ''' <param name="skelId"></param>
     Sub ReplaceOccurences(Optional ByRef asyOcc As ComponentOccurrence = Nothing,
                           Optional ByVal skelId As String = Nothing)
+
         If asyOcc Is Nothing Then
+            Dim nameValueMap As Inventor.NameValueMap = _invApp.TransientObjects.CreateNameValueMap
+
+            nameValueMap.Add("SkipAllUnresolvedFiles", True)
             ' this is the root assembly
             ' we need to open the new assembly
-            Dim newAsmDoc As Inventor.AssemblyDocument = _invApp.Documents.Open(nFullFileName)
+            Dim newAsmDoc As Inventor.AssemblyDocument = _invApp.Documents.OpenWithOptions(nFullFileName, nameValueMap, True)
+            'create name value map of options for opening the root assembly
+
+
             Dim newAsmOccs As Inventor.ComponentOccurrences = newAsmDoc.ComponentDefinition.Occurrences
 
             'replace the parts in the root assembly
             If prtList.Count > 0 Then
                 For Each part As InvtPartObj In prtList
-                    newAsmOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+                    'skip content center parts
+                    If part.SubType IsNot "Content Center Part" Then
+                        'This replaces all occurrences so no need to replace duplicates separately
+                        Debug.WriteLine("Replacing part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
+                        _form.Label_CopyComplete.Text = "Replacing: " And part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
+                        newAsmOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+                    End If
                 Next
             End If
 
+            '
             If subAsyList.Count > 0 Then
                 For Each subAsy As AssemblyCopyObject In subAsyList
                     Dim curOcc As ComponentOccurrence = newAsmOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
+                    _form.Label_CopyComplete.Text = "Replacing: " And subAsy.OriginalName & " with " & subAsy.NewFullFileName
                     curOcc.Replace(subAsy.NewFullFileName, True)
                     If subAsy.SubType = "Frame" Then
                         subAsy.ReplaceFrame(curOcc)
                     Else
                         subAsy.ReplaceOccurences(curOcc)
                     End If
-
                 Next
             End If
 
@@ -521,7 +566,13 @@ Friend Class AssemblyCopyObject
             'replace the parts in the root assembly
             If prtList.Count > 0 Then
                 For Each part As InvtPartObj In prtList
-                    subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+                    'skip content center parts
+                    If part.SubType IsNot "Content Center Part" Then
+                        'This replaces all occurrences so no need to replace duplicates separately
+                        Debug.WriteLine("Replacing part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
+                        _form.Label_CopyComplete.Text = "Replacing: " And part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
+                        subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+                    End If
                 Next
             End If
 
@@ -530,7 +581,8 @@ Friend Class AssemblyCopyObject
                     'get the occurence of the current subAsy by searching for it by name using the original occurence name
                     Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
 
-                    'recall this sub by getting the occurence of the component to be replaced by 
+                    'recall this sub by getting the occurence of the component to be replaced by
+                    _form.Label_CopyComplete.Text = "Replacing: " And subAsy.OriginalName & " with " & subAsy.NewFullFileName
                     curOcc.Replace(subAsy.NewFullFileName, True)
                     If subAsy.SubType = "Frame" Then
                         subAsy.ReplaceFrame(curOcc)
@@ -541,6 +593,7 @@ Friend Class AssemblyCopyObject
                 Next
             End If
         End If
+
     End Sub
 
     ''' <summary>
@@ -568,6 +621,9 @@ Friend Class AssemblyCopyObject
                 'frame assemblies have a different root directory
                 Dim frameRootDirectory As String = nRootDirectory + nAsyName + "\Frame\"
                 subAsy.UpdateNewProperties(frameRootDirectory)
+            ElseIf subAsy.SubType Is "Bolted Connection" Then
+                Dim boltedConnectionDirectory As String = nRootDirectory + nAsyName + "\Design Accelerator\"
+                subAsy.UpdateNewProperties(boltedConnectionDirectory)
             Else
                 subAsy.UpdateNewProperties(nRootDirectory)
             End If
@@ -611,7 +667,15 @@ Friend Class AssemblyCopyObject
         'replace the parts in the root assembly
         If prtList.Count > 0 Then
             For Each part As InvtPartObj In prtList
-                subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+                If part.SubType IsNot "Content Center Part" Then
+                    'This replaces all occurrences so no need to replace duplicates separately"
+                    Debug.WriteLine("Replacing Frame part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
+                    _form.Label_CopyComplete.Text = "Replacing: " And part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
+                    subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+                Else
+                    Debug.WriteLine("Skipping Content Center Part: " & part.OriginalName)
+                End If
+
             Next
         End If
 
@@ -621,6 +685,7 @@ Friend Class AssemblyCopyObject
                 Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
 
                 'recall this sub by getting the occurence of the component to be replaced by 
+                _form.Label_CopyComplete.Text = "Replacing: " And subAsy.OriginalName & " with " & subAsy.NewFullFileName
                 curOcc.Replace(subAsy.NewFullFileName, True)
                 If subAsy.SubType = "Frame" Then
                     subAsy.ReplaceFrame(curOcc)

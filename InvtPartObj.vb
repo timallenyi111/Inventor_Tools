@@ -108,6 +108,8 @@
         If oFullFileName.ToLower.StartsWith(contentCenterPath.ToLower) Then
             _subType = "Content Center Part"
             nTreeNode = ParentAssemblyNewNode.Nodes.Add(oPrtName)
+            Debug.WriteLine("Content Center Part Found: " & oPrtName)
+            duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
         Else
             nPrtName = oPrtName ' For now.... we aren't changing the new names by default
             nFilePath = rootDirectory
@@ -132,7 +134,10 @@
 
     Sub UpdateNewProperties(ByVal rootDirectory As String)
         nPrtName = nTreeNode.Text
-        nFilePath = rootDirectory
+        'Content Center Parts retain their original file path
+        If SubType IsNot "Content Center Part" Then
+            nFilePath = rootDirectory
+        End If
     End Sub
 
     Sub AddDuplicateOccurrence(ByRef dupOcc As Inventor.ComponentOccurrence)

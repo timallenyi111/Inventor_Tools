@@ -174,9 +174,12 @@ Friend Class AssemblyCopyToolForm
 #Region "Button Clicks"
 
     Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
+        Label_CopyComplete.Visible = True
+        Label_CopyComplete.Text = "Starting Process..."
         rootAssemblyObject.UpdateNewProperties()
         rootAssemblyObject.CreateNewFiles(dryrun:=False)
         rootAssemblyObject.ReplaceOccurences()
+        Label_CopyComplete.Text = "Assembly Copy Complete!"
     End Sub
 
     Private Sub NewDirButton_Click(sender As Object, e As EventArgs) Handles newDirButton.Click
@@ -191,7 +194,9 @@ Friend Class AssemblyCopyToolForm
 
     Private Sub TestButton_Click(sender As Object, e As EventArgs) Handles TestButton.Click
         'ReadSelectSet(_invApp)
-        CreateAttributeLog(_invApp)
+        'CreateAttributeLog(_invApp)
+        'GetRootAssemblyAttributes(_invApp)
+        ReadDocumentAttributes(_invApp)
     End Sub
 
 #End Region
@@ -276,6 +281,9 @@ Friend Class AssemblyCopyToolForm
         TB_newDir.Width = CInt(clientWidth - TB_newDir.Left - medium_gap - newDirButton.Width)
 
         Label4.Top = newDirLabelTop + TB_newDir.Height + medium_gap
+
+        Label_CopyComplete.Left = CInt(clientWidth / 2) - CInt(Label_CopyComplete.Width / 2)
+        Label_CopyComplete.Top = CopyButton.Top - Label_CopyComplete.Height - medium_gap
 
         ResizeAssemblyNameLayout()
         ResetCarets()
