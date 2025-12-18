@@ -1,8 +1,17 @@
 ﻿### Base To-Do List
 - [ ] Check if 2 different component files have the same name but different content
-- [ ] Figure out how to handle bolted connections and other content center objects
+- [x] Figure out how to handle bolted connections and other content center objects
 - [x] Make Frame Generator Members save in a sub-directory "\(parent file name\Frame\)"
-- [ ] Sow on the form when the copy process is complete
+- [x] Show on the form when the copy process is complete
+- [ ] Make an installer
+
+###To-Do before v0.1
+- [ ] Make a Thumbnail
+- [ ] Allow renaming of individual components
+- [ ] Remove the original tree node
+- [ ] Allow the option to not copy certain components
+- [ ] Remove the main menu for v0.1
+- [ ] Modernize the UI
 
 ### Notes
 Frame Attributes:
