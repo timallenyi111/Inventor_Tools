@@ -96,14 +96,12 @@
     End Property
 
     Sub InitialSetup(ByRef PartOcc As Inventor.ComponentOccurrence, ByRef rootDirectory As String,
-                     ByRef ParentAssemblyOriginalNode As TreeNode, ByRef ParentAssemblyNewNode As TreeNode,
-                     ByRef contentCenterPath As String)
+                     ByRef ParentAssemblyNewNode As TreeNode, ByRef contentCenterPath As String)
 
         oPartOcc = PartOcc
         oPrtDoc = PartOcc.Definition.Document
         oFullFileName = oPrtDoc.FullFileName
         oPrtName = GetPartName(oFullFileName)
-        oTreeNode = ParentAssemblyOriginalNode.Nodes.Add(oPrtName)
         'check if this is a content center part
         If oFullFileName.ToLower.StartsWith(contentCenterPath.ToLower) Then
             _subType = "Content Center Part"

@@ -33,7 +33,7 @@ Namespace My
         
         <Global.System.Diagnostics.DebuggerStepThroughAttribute()>  _
         Protected Overrides Sub OnCreateMainForm()
-            Me.MainForm = Global.Inventor_Tools.MainMenu
+            Me.MainForm = Global.Inventor_Tools.AssemblyCopyToolForm
         End Sub
         
         <Global.System.Diagnostics.DebuggerStepThroughAttribute()>  _

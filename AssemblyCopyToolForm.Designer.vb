@@ -26,7 +26,6 @@ Partial Class AssemblyCopyToolForm
         Label2 = New Label()
         TB_ProjDir = New TextBox()
         TB_FileName = New TextBox()
-        TV_oComponent = New TreeView()
         TV_nComponent = New TreeView()
         CopyButton = New Button()
         Label3 = New Label()
@@ -37,7 +36,6 @@ Partial Class AssemblyCopyToolForm
         TB_NewAssemblyName = New TextBox()
         TB_Suffix = New TextBox()
         TB_Prefix = New TextBox()
-        Label_NewAssmName = New Label()
         TestButton = New Button()
         Label_CopyComplete = New Label()
         SuspendLayout()
@@ -83,22 +81,13 @@ Partial Class AssemblyCopyToolForm
         TB_FileName.TabStop = False
         TB_FileName.Tag = "t"
         ' 
-        ' TV_oComponent
-        ' 
-        TV_oComponent.BorderStyle = BorderStyle.FixedSingle
-        TV_oComponent.Location = New Point(25, 150)
-        TV_oComponent.Name = "TV_oComponent"
-        TV_oComponent.Size = New Size(662, 700)
-        TV_oComponent.TabIndex = 11
-        TV_oComponent.TabStop = False
-        ' 
         ' TV_nComponent
         ' 
         TV_nComponent.BorderStyle = BorderStyle.FixedSingle
         TV_nComponent.FullRowSelect = True
         TV_nComponent.HideSelection = False
         TV_nComponent.LabelEdit = True
-        TV_nComponent.Location = New Point(712, 150)
+        TV_nComponent.Location = New Point(25, 150)
         TV_nComponent.Name = "TV_nComponent"
         TV_nComponent.Size = New Size(662, 700)
         TV_nComponent.TabIndex = 10
@@ -106,7 +95,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' CopyButton
         ' 
-        CopyButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        CopyButton.Font = New Font("Calibri", 14.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         CopyButton.Location = New Point(615, 1300)
         CopyButton.Name = "CopyButton"
         CopyButton.Size = New Size(170, 70)
@@ -181,19 +170,9 @@ Partial Class AssemblyCopyToolForm
         TB_Prefix.Tag = "t"
         TB_Prefix.TextAlign = HorizontalAlignment.Right
         ' 
-        ' Label_NewAssmName
-        ' 
-        Label_NewAssmName.AutoSize = True
-        Label_NewAssmName.Location = New Point(971, 921)
-        Label_NewAssmName.Name = "Label_NewAssmName"
-        Label_NewAssmName.Size = New Size(225, 29)
-        Label_NewAssmName.TabIndex = 23
-        Label_NewAssmName.Text = "  = 1_Default Name_2"
-        Label_NewAssmName.TextAlign = ContentAlignment.MiddleCenter
-        ' 
         ' TestButton
         ' 
-        TestButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        TestButton.Font = New Font("Calibri", 14.0F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
         TestButton.Location = New Point(806, 1300)
         TestButton.Name = "TestButton"
         TestButton.Size = New Size(170, 70)
@@ -213,12 +192,11 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' AssemblyCopyToolForm
         ' 
-        AutoScaleDimensions = New SizeF(12F, 29F)
+        AutoScaleDimensions = New SizeF(12.0F, 29.0F)
         AutoScaleMode = AutoScaleMode.Font
         ClientSize = New Size(1400, 1400)
         Controls.Add(Label_CopyComplete)
         Controls.Add(TestButton)
-        Controls.Add(Label_NewAssmName)
         Controls.Add(TB_Prefix)
         Controls.Add(TB_Suffix)
         Controls.Add(TB_NewAssemblyName)
@@ -228,12 +206,11 @@ Partial Class AssemblyCopyToolForm
         Controls.Add(Label3)
         Controls.Add(CopyButton)
         Controls.Add(TV_nComponent)
-        Controls.Add(TV_oComponent)
         Controls.Add(TB_FileName)
         Controls.Add(TB_ProjDir)
         Controls.Add(Label2)
         Controls.Add(Label1)
-        Font = New Font("Calibri", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        Font = New Font("Calibri", 12.0F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
         Margin = New Padding(3, 4, 3, 4)
         Name = "AssemblyCopyToolForm"
         Text = "Assembly Copy Tool"
@@ -246,7 +223,6 @@ Partial Class AssemblyCopyToolForm
     Friend WithEvents Label2 As Label
     Friend WithEvents TB_ProjDir As TextBox
     Friend WithEvents TB_FileName As TextBox
-    Friend WithEvents TV_oComponent As TreeView
     Friend WithEvents TV_nComponent As TreeView
     Friend WithEvents CopyButton As Button
     Friend WithEvents Label3 As Label
@@ -257,7 +233,6 @@ Partial Class AssemblyCopyToolForm
     Friend WithEvents TB_NewAssemblyName As TextBox
     Friend WithEvents TB_Suffix As TextBox
     Friend WithEvents TB_Prefix As TextBox
-    Friend WithEvents Label_NewAssmName As Label
     Friend WithEvents TestButton As Button
     Friend WithEvents Label_CopyComplete As Label
 

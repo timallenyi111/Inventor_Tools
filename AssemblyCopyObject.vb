@@ -20,7 +20,6 @@ Friend Class AssemblyCopyObject
     Private nFullFileName As String
     Private nRootDirectory As String
     Private oAsmDoc As AssemblyDocument
-    Private oTreeNode As TreeNode
     Private nTreeNode As TreeNode
     Private oCompOcc As ComponentOccurrence
     Private _subType As String
@@ -39,7 +38,7 @@ Friend Class AssemblyCopyObject
 
 #Region "setup functions"
     Sub InitialSetup(Optional asyOcc As ComponentOccurrence = Nothing, Optional rootDirectory As String = Nothing,
-                     Optional oParentTreeNode As TreeNode = Nothing, Optional nParentTreeNode As TreeNode = Nothing)
+                     Optional nParentTreeNode As TreeNode = Nothing)
 
         'Check if the current assembly is the root assembly
         If asyOcc Is Nothing Then
@@ -51,7 +50,7 @@ Friend Class AssemblyCopyObject
             hltSet = _invApp.ActiveDocument.CreateHighlightSet()
         Else
             ' this is a subassembly
-            SetOriginalProperties(asyOcc.Definition.Document, asyOcc, oParentTreeNode)
+            SetOriginalProperties(asyOcc.Definition.Document, asyOcc)
             nRootDirectory = rootDirectory
             SetNewProperties(nParentTreeNode) ' sub assemblys don't automatically get the pre/suffix
             'hltSet = oAsmDoc.CreateHighlightSet()
@@ -68,7 +67,7 @@ Friend Class AssemblyCopyObject
                 If CheckForDuplicateDocument(curOcc) = False Then
                     ' perform part setup
                     Dim curPartObject As New InvtPartObj
-                    curPartObject.InitialSetup(curOcc, nRootDirectory, oTreeNode, nTreeNode, _contentCenterPath)
+                    curPartObject.InitialSetup(curOcc, nRootDirectory, nTreeNode, _contentCenterPath)
                     prtList.Add(curPartObject)
                 Else
                     _form.Log(curOcc._DisplayName & " was a duplicate")
@@ -82,14 +81,14 @@ Friend Class AssemblyCopyObject
                     If CheckIfOccurenceIsFrame(curOcc) Then
                         ' this is a frame assembly so we need to set the frame directory
                         Dim frameRootDirectory As String = nRootDirectory + nTreeNode.Text + "\Frame\"
-                        curAsmObject.InitialSetup(curOcc, frameRootDirectory, oTreeNode, nTreeNode)
+                        curAsmObject.InitialSetup(curOcc, frameRootDirectory, nTreeNode)
                         curAsmObject.SubType = "Frame"
                     ElseIf CheckIfOccurrenceIsBoltedConnection(curOcc) Then
                         Dim boltedConnectionDirectory As String = nRootDirectory + nTreeNode.Text + "\Design Accelerator\"
-                        curAsmObject.InitialSetup(curOcc, boltedConnectionDirectory, oTreeNode, nTreeNode)
+                        curAsmObject.InitialSetup(curOcc, boltedConnectionDirectory, nTreeNode)
                         curAsmObject.SubType = "Bolted Connection"
                     Else
-                        curAsmObject.InitialSetup(curOcc, nRootDirectory, oTreeNode, nTreeNode)
+                        curAsmObject.InitialSetup(curOcc, nRootDirectory, nTreeNode)
                     End If
                     'Debug.WriteLine(curAsmObject.NewFullFileName)
                     subAsyList.Add(curAsmObject)
@@ -109,8 +108,7 @@ Friend Class AssemblyCopyObject
     ''' <param name="AsyOcc"></param>
     ''' <param name="ParentAssembly"></param>
     Sub SetOriginalProperties(ByRef AsyDoc As AssemblyDocument,
-                              Optional ByRef AsyOcc As ComponentOccurrence = Nothing,
-                              Optional ByRef oParentNode As TreeNode = Nothing)
+                              Optional ByRef AsyOcc As ComponentOccurrence = Nothing)
 
         oCompOcc = AsyOcc
         oAsmDoc = AsyDoc
@@ -119,13 +117,11 @@ Friend Class AssemblyCopyObject
 
         'if there is no parent occurence then it is the main assembly and so the first tree node has to be created
         If AsyOcc Is Nothing Then
-            oTreeNode = New TreeNode(oAsyName)
             SubType = "Root"
         Else
             If CheckIfOccurenceIsFrame(oCompOcc) Then
                 _subType = "Frame"
             End If
-            oTreeNode = oParentNode.Nodes.Add(oAsyName)
         End If
     End Sub
 
@@ -464,12 +460,47 @@ Friend Class AssemblyCopyObject
 #End Region
 
 #Region "File Copy Functions"
+
+    ''' <summary>
+    ''' 'update the "new properties" based on changes to the form since load
+    ''' </summary>
+    Sub UpdateNewProperties(Optional ByVal nRootDirectory = Nothing)
+        'assembly already has its node from the original setup so we can just reference that for updates
+        'the first run through is the root assembly so we need to add the prefix and suffix
+
+        'update the root directory based on changes since load
+        If nRootDirectory Is Nothing Then
+            'this is the the root directory and the sub assemblies don't have access to the form
+            nRootDirectory = _form.TB_newDir.Text
+        End If
+
+        nAsyName = NewTreeNode.Text
+        nFullFileName = nRootDirectory & nAsyName & ".iam"
+
+        For Each part As InvtPartObj In prtList
+            part.UpdateNewProperties(nRootDirectory)
+        Next
+
+        For Each subAsy As AssemblyCopyObject In subAsyList
+            If subAsy.SubType Is "Frame" Then
+                'frame assemblies have a different root directory
+                Dim frameRootDirectory As String = nRootDirectory + nAsyName + "\Frame\"
+                subAsy.UpdateNewProperties(frameRootDirectory)
+            ElseIf subAsy.SubType Is "Bolted Connection" Then
+                Dim boltedConnectionDirectory As String = nRootDirectory + nAsyName + "\Design Accelerator\"
+                subAsy.UpdateNewProperties(boltedConnectionDirectory)
+            Else
+                subAsy.UpdateNewProperties(nRootDirectory)
+            End If
+        Next
+    End Sub
+
+
     Sub CreateNewFiles(Optional dryrun As Boolean = False)
         'copy the root assembly
         If dryrun Then
             CopyFile_DRYRUN(oFullFileName, nFullFileName)
         Else
-
             CopyFile(oFullFileName, nFullFileName)
         End If
 
@@ -596,42 +627,7 @@ Friend Class AssemblyCopyObject
 
     End Sub
 
-    ''' <summary>
-    ''' 'update the "new properties" based on changes to the form since load
-    ''' </summary>
-    Sub UpdateNewProperties(Optional ByVal nRootDirectory = Nothing)
-        'assembly already has its node from the original setup so we can just reference that for updates
-        'the first run through is the root assembly so we need to add the prefix and suffix
 
-        'update the root directory based on changes since load
-        If nRootDirectory Is Nothing Then
-            'this is the the root directory and the sub assemblies don't have access to the form
-            nRootDirectory = _form.TB_newDir.Text
-        End If
-
-        nAsyName = NewTreeNode.Text
-        nFullFileName = nRootDirectory & nAsyName & ".iam"
-
-        For Each part As InvtPartObj In prtList
-            part.UpdateNewProperties(nRootDirectory)
-        Next
-
-        For Each subAsy As AssemblyCopyObject In subAsyList
-            If subAsy.SubType Is "Frame" Then
-                'frame assemblies have a different root directory
-                Dim frameRootDirectory As String = nRootDirectory + nAsyName + "\Frame\"
-                subAsy.UpdateNewProperties(frameRootDirectory)
-            ElseIf subAsy.SubType Is "Bolted Connection" Then
-                Dim boltedConnectionDirectory As String = nRootDirectory + nAsyName + "\Design Accelerator\"
-                subAsy.UpdateNewProperties(boltedConnectionDirectory)
-            Else
-                subAsy.UpdateNewProperties(nRootDirectory)
-            End If
-        Next
-
-
-
-    End Sub
 #End Region
 
 #Region "Frame Copy Functions"
@@ -819,12 +815,6 @@ Friend Class AssemblyCopyObject
     ReadOnly Property OriginalAsmDocument As AssemblyDocument
         Get
             Return oAsmDoc
-        End Get
-    End Property
-
-    ReadOnly Property OriginalTreeNode As TreeNode
-        Get
-            Return oTreeNode
         End Get
     End Property
 

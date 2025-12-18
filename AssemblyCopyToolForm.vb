@@ -82,15 +82,13 @@ Friend Class AssemblyCopyToolForm
         ' this is just the middle of the name not including prefix and suffix
         TB_NewAssemblyName.Text = rootAssemblyObject.OriginalName
 
-        Label_NewAssmName.Text = "  :  " & rootAssemblyObject.NewName
         LongTextboxWrite(TB_ProjDir, rootAssemblyObject.GetProjectDirectory(_invApp))
         LongTextboxWrite(TB_newDir, rootAssemblyObject.NewRootDirectory)
 
         ' setup the form layout after assigning values
         FormLayoutSetup(True)
 
-        ' setup tree views
-        TV_oComponent.Nodes.Add(rootAssemblyObject.OriginalTreeNode)
+        ' setup tree view
         TV_nComponent.Nodes.Add(rootAssemblyObject.NewTreeNode)
 
     End Sub
@@ -136,7 +134,6 @@ Friend Class AssemblyCopyToolForm
     ''' </summary>
     ''' <param name="assmName"></param>
     Private Sub ChangeNewAssemblyNameLabel(ByRef assmName As String)
-        Label_NewAssmName.Text = "  :  " & assmName
         ResizeAssemblyNameLayout()
     End Sub
 
@@ -158,7 +155,6 @@ Friend Class AssemblyCopyToolForm
             ' this happens on the initial load
         Else
             Dim asmName As String = TB_Prefix.Text & TB_NewAssemblyName.Text & TB_Suffix.Text
-            Label_NewAssmName.Text = "  :  " & asmName
             ResizeAssemblyNameLayout()
             rootAssemblyObject.NewName = asmName
             TB_newDir.Text = rootAssemblyObject.NewRootDirectory
@@ -255,15 +251,15 @@ Friend Class AssemblyCopyToolForm
         TB_FileName.Width = CInt(clientWidth - TB_FileName.Left - medium_gap)
 
         Dim tv_width = (clientWidth - (medium_gap * 3)) / 2
-        TV_oComponent.Width = CInt(tv_width)
+        'TV_oComponent.Width = CInt(tv_width)
         TV_nComponent.Width = CInt(tv_width)
 
         Dim tv_height As Integer = Me.ClientSize.Height - aboveTV_space - belowTV_space
-        TV_oComponent.Height = CInt(tv_height)
+        'TV_oComponent.Height = CInt(tv_height)
         TV_nComponent.Height = CInt(tv_height)
 
-        TV_oComponent.Left = CInt(medium_gap)
-        TV_nComponent.Left = CInt(tv_width + medium_gap * 2)
+        'TV_oComponent.Left = CInt(medium_gap)
+        TV_nComponent.Left = CInt(medium_gap)
 
         CopyButton.Left = CInt(clientWidth / 2) - CopyButton.Width / 2
         CopyButton.Top = CInt(clientHeight / 14) * 13
@@ -271,7 +267,7 @@ Friend Class AssemblyCopyToolForm
         TestButton.Left = CopyButton.Left + CopyButton.Width + medium_gap
         TestButton.Top = CopyButton.Top
 
-        Dim newDirLabelTop As Integer = TV_oComponent.Top + TV_oComponent.Height + medium_gap * 1.5
+        Dim newDirLabelTop As Integer = TV_nComponent.Top + TV_nComponent.Height + medium_gap * 1.5
         Label3.Top = newDirLabelTop
 
         newDirButton.Top = newDirLabelTop
@@ -301,7 +297,7 @@ Friend Class AssemblyCopyToolForm
 
     Private Sub ResizeAssemblyNameLayout()
         Dim clientWidth As Integer = Me.ClientSize.Width
-        Dim newAssemblyNameArea As Integer = clientWidth - labelRightEdge - Label_NewAssmName.Width - medium_gap
+        Dim newAssemblyNameArea As Integer = clientWidth - labelRightEdge - medium_gap
 
         TB_Prefix.Top = Label4.Top
         TB_Prefix.Left = labelRightEdge
@@ -315,7 +311,6 @@ Friend Class AssemblyCopyToolForm
         TB_Suffix.Left = TB_NewAssemblyName.Left + TB_NewAssemblyName.Width
         TB_Suffix.Width = newAssemblyNameArea * 0.1
 
-        Label_NewAssmName.Left = clientWidth - medium_gap - Label_NewAssmName.Width
     End Sub
 
     ''' <summary>
