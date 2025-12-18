@@ -10,6 +10,7 @@
 - [x] Allow renaming of individual components
 - [x] Remove the original tree node
 - [x] Allow the option to not copy certain components
+- [x] If an assembly is not being copied then all of its parts can't be copied either
 - [x] Remove the main menu for v0.1
 - [ ] Modernize the UI
 

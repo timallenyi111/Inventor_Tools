@@ -370,7 +370,17 @@ Friend Class AssemblyCopyToolForm
         Component_Modification.Show()
     End Sub
 
-
+    ''' <summary>
+    ''' Marks components that should not be copied by changing their background color to Gray
+    ''' </summary>
+    Public Sub DontCopyNode()
+        doubleClickNode.BackColor = System.Drawing.Color.Gray
+        If doubleClickNode.Nodes.Count > 0 Then
+            For Each childNode As TreeNode In doubleClickNode.Nodes
+                childNode.BackColor = System.Drawing.Color.Gray
+            Next
+        End If
+    End Sub
 #End Region
 
 

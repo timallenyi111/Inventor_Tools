@@ -1,19 +1,20 @@
 ﻿Friend Class InvtPartObj
-    Dim oPrtName As String
-    Dim oFilePath As String
-    Dim nPrtName As String
-    Dim nFilePath As String
-    Dim oPrtDoc As Inventor.PartDocument
-    Dim oFullFileName As String
-    'Dim nFileName As String
-    Dim tNode As New TreeNode
-    Dim oPartNumber As String
-    Dim nPartNumber As String
-    Dim oPartOcc As Inventor.ComponentOccurrence
-    Dim oTreeNode As TreeNode
-    Dim nTreeNode As TreeNode
-    Dim duplicateOccurrenceList As List(Of Inventor.ComponentOccurrence)
-    Dim _subType As String
+    Private oPrtName As String
+    Private oFilePath As String
+    Private nPrtName As String
+    Private nFilePath As String
+    Private oPrtDoc As Inventor.PartDocument
+    Private oFullFileName As String
+    'Private nFileName As String
+    Private tNode As New TreeNode
+    Private oPartNumber As String
+    Private nPartNumber As String
+    Private oPartOcc As Inventor.ComponentOccurrence
+    Private oTreeNode As TreeNode
+    Private nTreeNode As TreeNode
+    Private duplicateOccurrenceList As List(Of Inventor.ComponentOccurrence)
+    Private _subType As String
+    Private _enableCopy As Boolean = True
 
     ReadOnly Property OriginalName As String
         Get
@@ -95,6 +96,15 @@
         End Get
     End Property
 
+    Property CopyEnabled As Boolean
+        Get
+            Return _enableCopy
+        End Get
+        Set(value As Boolean)
+            _enableCopy = value
+        End Set
+    End Property
+
     Sub InitialSetup(ByRef PartOcc As Inventor.ComponentOccurrence, ByRef rootDirectory As String,
                      ByRef ParentAssemblyNewNode As TreeNode, ByRef contentCenterPath As String)
 
@@ -131,11 +141,16 @@
     End Function
 
     Sub UpdateNewProperties(ByVal rootDirectory As String)
-        nPrtName = nTreeNode.Text
-        'Content Center Parts retain their original file path
-        If SubType IsNot "Content Center Part" Then
-            nFilePath = rootDirectory
+        If NewTreeNode.BackColor = System.Drawing.Color.Gray Then
+            CopyEnabled = False
+        Else
+            nPrtName = nTreeNode.Text
+            'Content Center Parts retain their original file path
+            If SubType IsNot "Content Center Part" Then
+                nFilePath = rootDirectory
+            End If
         End If
+
     End Sub
 
     Sub AddDuplicateOccurrence(ByRef dupOcc As Inventor.ComponentOccurrence)
