@@ -16,13 +16,12 @@ Friend Class AssemblyCopyToolForm
     Public _writer As StreamWriter
     Public doubleClickNode As TreeNode
 
+    Private selectedNode As TreeNode
     Private oAsmCompDef As AssemblyComponentDefinition
     Private newDirectory As String
     Private rootAssemblyObject As AssemblyCopyObject
     Dim defaultSuffix As String = "_2"
     Dim defaultPrefix As String = ""
-    Dim medium_gap As Integer = 10
-    Dim labelRightEdge As Integer = 164
     Dim highlightSet As Inventor.HighlightSet
 
 
@@ -81,7 +80,7 @@ Friend Class AssemblyCopyToolForm
         TB_FileName.Text = rootAssemblyObject.OriginalName & ".iam"
         ' by default the new assembly name is the same as the original
         ' this is just the middle of the name not including prefix and suffix
-        TB_NewAssemblyName.Text = rootAssemblyObject.OriginalName
+        'TB_NewAssemblyName.Text = rootAssemblyObject.OriginalName
 
         LongTextboxWrite(TB_ProjDir, rootAssemblyObject.GetProjectDirectory(_invApp))
         LongTextboxWrite(TB_newDir, rootAssemblyObject.NewRootDirectory)
@@ -125,42 +124,41 @@ Friend Class AssemblyCopyToolForm
     End Sub
 
 
-
-
-
 #Region "Form Text Controls"
 
     ''' <summary>
     ''' Updates the new assembly name label and then calls for the resizing of the UI in that row
     ''' </summary>
     ''' <param name="assmName"></param>
-    Private Sub ChangeNewAssemblyNameLabel(ByRef assmName As String)
-        ResizeAssemblyNameLayout()
-    End Sub
+    'Private Sub ChangeNewAssemblyNameLabel(ByRef assmName As String)
+    '    ResizeAssemblyNameLayout()
+    'End Sub
 
     Private Sub PrefixTB_TextChanged(sender As Object, e As EventArgs) Handles TB_Prefix.TextChanged
-        UpdateNewFileName()
+        'UpdateNewFileName()
     End Sub
 
-    Private Sub TB_NewAssemblyName_TextChanged(sender As Object, e As EventArgs) Handles TB_NewAssemblyName.TextChanged
-        UpdateNewFileName()
+    Private Sub TB_NewAssemblyName_TextChanged(sender As Object, e As EventArgs)
+        'UpdateNewFileName()
     End Sub
 
     Private Sub TB_Suffix_TextChanged(sender As Object, e As EventArgs) Handles TB_Suffix.TextChanged
-        UpdateNewFileName()
+        'UpdateNewFileName()
     End Sub
 
-    Private Sub UpdateNewFileName()
+    Private Sub UpdateNewFileName(ByVal newAsmName As String)
 
-        If rootAssemblyObject Is Nothing Then
-            ' this happens on the initial load
-        Else
-            Dim asmName As String = TB_Prefix.Text & TB_NewAssemblyName.Text & TB_Suffix.Text
-            ResizeAssemblyNameLayout()
-            rootAssemblyObject.NewName = asmName
-            TB_newDir.Text = rootAssemblyObject.NewRootDirectory
-            ResetCarets()
-        End If
+
+
+        'If rootAssemblyObject Is Nothing Then
+        '    ' this happens on the initial load
+        'Else
+        '    Dim asmName As String = TB_Prefix.Text & TB_NewAssemblyName.Text & TB_Suffix.Text
+        '    ResizeAssemblyNameLayout()
+        '    rootAssemblyObject.NewName = asmName
+        '    TB_newDir.Text = rootAssemblyObject.NewRootDirectory
+        '    ResetCarets()
+        'End If
 
 
     End Sub
@@ -171,12 +169,12 @@ Friend Class AssemblyCopyToolForm
 #Region "Button Clicks"
 
     Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
-        Label_CopyComplete.Visible = True
-        Label_CopyComplete.Text = "Starting Process..."
+        LB_CopyComplete.Visible = True
+        LB_CopyComplete.Text = "Starting Process..."
         rootAssemblyObject.UpdateNewProperties()
         rootAssemblyObject.CreateNewFiles(dryrun:=False)
         rootAssemblyObject.ReplaceOccurences()
-        Label_CopyComplete.Text = "Assembly Copy Complete!"
+        LB_CopyComplete.Text = "Assembly Copy Complete!"
         _invApp.ActiveDocument.Save2()
     End Sub
 
@@ -196,6 +194,11 @@ Friend Class AssemblyCopyToolForm
         'GetRootAssemblyAttributes(_invApp)
         ReadDocumentAttributes(_invApp)
     End Sub
+    Private Sub BT_PreSuffix_Click(sender As Object, e As EventArgs) Handles BT_PreSuffix.Click
+        Dim node As TreeNode = TV_nComponent.SelectedNode
+        Dim oNodeText As String = node.Text
+        node.Text = TB_Prefix.Text & oNodeText & TB_Suffix.Text
+    End Sub
 
 #End Region
 
@@ -207,83 +210,95 @@ Friend Class AssemblyCopyToolForm
         Dim aboveTV_space As Integer = 100
         Dim belowTV_space As Integer = 370
         Dim standardHeight As Integer = 25
+        Dim medium_gap As Integer = 10
 
         'stuff you don't want to scale with resize
         If initialLayout Then
 
-            Label1.Height = standardHeight
-            Label1.Left = CInt(labelRightEdge - Label1.Width)
-            Label1.Top = 17
-
-            Dim label1_2Spacing As Integer = 25
-            Label2.Height = standardHeight
-            Label2.Left = CInt(labelRightEdge - Label2.Width)
-            Label2.Top = CInt(Label1.Top + Label1.Height + label1_2Spacing)
+            LB_ProjectDirectory.Height = standardHeight
+            LB_ProjectDirectory.Left = medium_gap
+            LB_ProjectDirectory.Top = 17
 
             TB_ProjDir.Height = standardHeight
-            TB_ProjDir.Left = labelRightEdge
-            TB_ProjDir.Top = Label1.Top
+            TB_ProjDir.Left = LB_ProjectDirectory.Left + LB_ProjectDirectory.Width
+            TB_ProjDir.Top = LB_ProjectDirectory.Top
+            TB_ProjDir.Width = CInt(clientWidth - TB_ProjDir.Left - medium_gap)
+
+            LB_FileName.Height = standardHeight
+            LB_FileName.Left = CInt(LB_ProjectDirectory.Left + LB_ProjectDirectory.Width - LB_FileName.Width)
+            LB_FileName.Top = CInt(LB_ProjectDirectory.Top + LB_ProjectDirectory.Height + standardHeight)
 
             TB_FileName.Height = standardHeight
-            TB_FileName.Left = labelRightEdge
-            TB_FileName.Top = Label2.Top
+            TB_FileName.Left = TB_ProjDir.Left
+            TB_FileName.Top = LB_FileName.Top
+            TB_FileName.Width = CInt(clientWidth - TB_FileName.Left - medium_gap)
 
-            Label3.Height = standardHeight
-            Label3.Left = labelRightEdge - Label3.Width
+            LB_NewDirectory.Height = standardHeight
+            LB_NewDirectory.Left = CInt(LB_ProjectDirectory.Left + LB_ProjectDirectory.Width - LB_NewDirectory.Width)
+            LB_NewDirectory.Top = CInt(LB_FileName.Top + LB_FileName.Height + standardHeight)
 
             newDirButton.Width = 70
             newDirButton.Height = TB_newDir.Height
+            newDirButton.Top = LB_NewDirectory.Top
+            newDirButton.Left = CInt(clientWidth - newDirButton.Width - medium_gap)
 
-            TB_newDir.Left = labelRightEdge
+            TB_newDir.Left = LB_NewDirectory.Left + LB_NewDirectory.Width
             TB_newDir.Height = standardHeight
+            TB_newDir.Top = LB_NewDirectory.Top
+            TB_newDir.Width = CInt(clientWidth - TB_newDir.Left - (clientWidth - newDirButton.Left) - medium_gap)
 
-            Label4.Left = labelRightEdge - Label4.Width
-            Label4.Height = standardHeight
+            CopyButton.Left = CInt(clientWidth / 2 - CopyButton.Width / 2)
+            CopyButton.Top = CInt(clientHeight - medium_gap - CopyButton.Height)
 
-            TB_Prefix.Left = labelRightEdge
+            TestButton.Left = CopyButton.Left + CopyButton.Width + medium_gap
+            TestButton.Top = CopyButton.Top
+
+            LB_CopyComplete.Left = CInt(clientWidth / 2) - CInt(LB_CopyComplete.Width / 2)
+            LB_CopyComplete.Top = CopyButton.Top - LB_CopyComplete.Height - medium_gap
+
+            TV_nComponent.Top = LB_NewDirectory.Top + LB_NewDirectory.Height + standardHeight
+            TV_nComponent.Height = CInt(clientHeight - (TV_nComponent.Top) - (clientHeight - LB_CopyComplete.Top))
+            TV_nComponent.Left = CInt(medium_gap)
+            TV_nComponent.Width = CInt(clientWidth * 0.75 - medium_gap)
+
+
+            GB_PreSuffix.Top = TV_nComponent.Top - medium_gap
+            GB_PreSuffix.Left = TV_nComponent.Left + TV_nComponent.Width + medium_gap / 2
+            GB_PreSuffix.Width = CInt(clientWidth - GB_PreSuffix.Left - medium_gap / 2)
+            GB_PreSuffix.Height = CInt(standardHeight * 6)
+
+
+            LB_Prefix.BringToFront()
+            LB_Prefix.Left = medium_gap / 2
+            LB_Prefix.Height = standardHeight
+            LB_Prefix.Top = CInt(standardHeight)
+
+            TB_Prefix.Left = LB_Prefix.Left + LB_Prefix.Width
             TB_Prefix.Height = standardHeight
+            TB_Prefix.Top = LB_Prefix.Top
+            TB_Prefix.Width = CInt(GB_PreSuffix.Width - TB_Prefix.Left - medium_gap / 2)
 
-            TB_NewAssemblyName.Height = standardHeight
+            LB_Suffix.Left = LB_Prefix.Left
+            LB_Suffix.Height = standardHeight
+            LB_Suffix.Top = LB_Prefix.Top + LB_Prefix.Height + standardHeight
 
+            TB_Suffix.Left = TB_Prefix.Left
             TB_Suffix.Height = standardHeight
+            TB_Suffix.Top = LB_Suffix.Top
+            TB_Suffix.Width = TB_Prefix.Width
+
+            'BT_PreSuffix.Left = CInt(LB_Prefix.Left + (LB_Prefix.Width + TB_Prefix.Width) / 2 - BT_PreSuffix.Width / 2)
+            BT_PreSuffix.Left = GB_PreSuffix.Width / 2 - BT_PreSuffix.Width / 2
+            BT_PreSuffix.Top = CInt(TB_Suffix.Top + TB_Suffix.Height + standardHeight / 2)
+
+            GB_PreSuffix.SendToBack()
+
+            Debug.WriteLine("Initial Layout Complete")
 
         End If
 
-        TB_ProjDir.Width = CInt(clientWidth - TB_ProjDir.Left - medium_gap)
-        TB_FileName.Width = CInt(clientWidth - TB_FileName.Left - medium_gap)
 
-        Dim tv_width = (clientWidth - (medium_gap * 3)) / 2
-        'TV_oComponent.Width = CInt(tv_width)
-        TV_nComponent.Width = CInt(tv_width)
-
-        Dim tv_height As Integer = Me.ClientSize.Height - aboveTV_space - belowTV_space
-        'TV_oComponent.Height = CInt(tv_height)
-        TV_nComponent.Height = CInt(tv_height)
-
-        'TV_oComponent.Left = CInt(medium_gap)
-        TV_nComponent.Left = CInt(medium_gap)
-
-        CopyButton.Left = CInt(clientWidth / 2) - CopyButton.Width / 2
-        CopyButton.Top = CInt(clientHeight / 14) * 13
-
-        TestButton.Left = CopyButton.Left + CopyButton.Width + medium_gap
-        TestButton.Top = CopyButton.Top
-
-        Dim newDirLabelTop As Integer = TV_nComponent.Top + TV_nComponent.Height + medium_gap * 1.5
-        Label3.Top = newDirLabelTop
-
-        newDirButton.Top = newDirLabelTop
-        newDirButton.Left = medium_gap * 2 + tv_width * 2 - newDirButton.Width
-
-        TB_newDir.Top = newDirLabelTop
-        TB_newDir.Width = CInt(clientWidth - TB_newDir.Left - medium_gap - newDirButton.Width)
-
-        Label4.Top = newDirLabelTop + TB_newDir.Height + medium_gap
-
-        Label_CopyComplete.Left = CInt(clientWidth / 2) - CInt(Label_CopyComplete.Width / 2)
-        Label_CopyComplete.Top = CopyButton.Top - Label_CopyComplete.Height - medium_gap
-
-        ResizeAssemblyNameLayout()
+        'ResizeAssemblyNameLayout()
         ResetCarets()
 
     End Sub
@@ -292,28 +307,28 @@ Friend Class AssemblyCopyToolForm
         MoveCaret(TB_newDir)
     End Sub
 
-    Private Sub AssemblyCopyToolForm_Resize(sender As Object, e As EventArgs) Handles Me.Resize
-        FormLayoutSetup(False)
-        ResetCarets()
-    End Sub
+    'Private Sub AssemblyCopyToolForm_Resize(sender As Object, e As EventArgs) Handles Me.Resize
+    '    FormLayoutSetup(False)
+    '    ResetCarets()
+    'End Sub
 
-    Private Sub ResizeAssemblyNameLayout()
-        Dim clientWidth As Integer = Me.ClientSize.Width
-        Dim newAssemblyNameArea As Integer = clientWidth - labelRightEdge - medium_gap
+    'Private Sub ResizeAssemblyNameLayout()
+    '    Dim clientWidth As Integer = Me.ClientSize.Width
+    '    Dim newAssemblyNameArea As Integer = clientWidth - labelRightEdge - medium_gap
 
-        TB_Prefix.Top = Label4.Top
-        TB_Prefix.Left = labelRightEdge
-        TB_Prefix.Width = newAssemblyNameArea * 0.1
+    '    TB_Prefix.Top = LB_Prefix.Top
+    '    TB_Prefix.Left = labelRightEdge
+    '    TB_Prefix.Width = newAssemblyNameArea * 0.1
 
-        TB_NewAssemblyName.Top = Label4.Top
-        TB_NewAssemblyName.Left = TB_Prefix.Left + TB_Prefix.Width
-        TB_NewAssemblyName.Width = newAssemblyNameArea * 0.8
+    '    TB_NewAssemblyName.Top = LB_Prefix.Top
+    '    TB_NewAssemblyName.Left = TB_Prefix.Left + TB_Prefix.Width
+    '    TB_NewAssemblyName.Width = newAssemblyNameArea * 0.8
 
-        TB_Suffix.Top = Label4.Top
-        TB_Suffix.Left = TB_NewAssemblyName.Left + TB_NewAssemblyName.Width
-        TB_Suffix.Width = newAssemblyNameArea * 0.1
+    '    TB_Suffix.Top = LB_Prefix.Top
+    '    TB_Suffix.Left = TB_NewAssemblyName.Left + TB_NewAssemblyName.Width
+    '    TB_Suffix.Width = newAssemblyNameArea * 0.1
 
-    End Sub
+    'End Sub
 
     ''' <summary>
     ''' Writes text in a textbox and scrolls to the end
@@ -342,6 +357,7 @@ Friend Class AssemblyCopyToolForm
         highlightSet.Clear()
         TV_nComponent.SelectedNode = e.Node
         TV_nComponent.Focus()
+        selectedNode = e.Node
 
         Dim Ena As Boolean = True
 
@@ -360,7 +376,6 @@ Friend Class AssemblyCopyToolForm
                 Next
             End If
         End If
-
 
         'rootAssemblyObject.HighlightOccurenceByNode(TV_nComponent.SelectedNode)
     End Sub
@@ -381,6 +396,18 @@ Friend Class AssemblyCopyToolForm
             Next
         End If
     End Sub
+
+    Sub AdjustRootDirectory()
+        If doubleClickNode.Text = rootAssemblyObject.NewName Then
+            'nothing needs to be done
+        Else
+            rootAssemblyObject.NewName = doubleClickNode.Text
+            TB_newDir.Text = rootAssemblyObject.NewRootDirectory
+            MoveCaret(TB_newDir)
+        End If
+    End Sub
+
+
 #End Region
 
 

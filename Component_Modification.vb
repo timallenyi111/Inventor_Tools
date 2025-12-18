@@ -8,6 +8,8 @@
         If CB_DoNotCopy.Checked Then
             AssemblyCopyToolForm.DontCopyNode()
         End If
+        'adjust the root directory of the root assembly if that is the node that has been changed
+        AssemblyCopyToolForm.AdjustRootDirectory()
         Me.Close()
     End Sub
 End Class

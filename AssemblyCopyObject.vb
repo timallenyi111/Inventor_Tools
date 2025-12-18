@@ -550,7 +550,7 @@ Friend Class AssemblyCopyObject
         Else
             System.IO.File.Copy(oFile, nFile, False)
             _form.Log("COPY SUCCESSFUL", numTabs:=1, numLines:=1)
-            _form.Label_CopyComplete.Text = "Saving File: " & nFile
+            _form.LB_CopyComplete.Text = "Saving File: " & nFile
         End If
     End Sub
 
@@ -582,7 +582,7 @@ Friend Class AssemblyCopyObject
                     If part.SubType IsNot "Content Center Part" And part.CopyEnabled = True Then
                         'This replaces all occurrences so no need to replace duplicates separately
                         Debug.WriteLine("Replacing part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
-                        _form.Label_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name
+                        _form.LB_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name
                         Dim curOcc As ComponentOccurrence = newAsmOccs.ItemByName(part.OriginalComponentOccurence.Name)
                         curOcc.Replace(part.NewFullFileName, True)
                         'we need to update the part number in the iProperties of components that have a new component name
@@ -601,7 +601,7 @@ Friend Class AssemblyCopyObject
                     'only replace sub-assemblies that are enabled for copy
                     If subAsy.CopyEnabled = True Then
                         Dim curOcc As ComponentOccurrence = newAsmOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
-                        _form.Label_CopyComplete.Text = "Replacing: " & subAsy.OriginalName & " with " & subAsy.NewFullFileName
+                        _form.LB_CopyComplete.Text = "Replacing: " & subAsy.OriginalName & " with " & subAsy.NewFullFileName
                         curOcc.Replace(subAsy.NewFullFileName, True)
 
                         If subAsy.OriginalName IsNot subAsy.NewName Then
@@ -629,7 +629,7 @@ Friend Class AssemblyCopyObject
                     If part.SubType IsNot "Content Center Part" And part.CopyEnabled = True Then
                         'This replaces all occurrences so no need to replace duplicates separately
                         Debug.WriteLine("Replacing part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
-                        _form.Label_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
+                        _form.LB_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
                         Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name)
                         curOcc.Replace(part.NewFullFileName, True)
 
@@ -652,7 +652,7 @@ Friend Class AssemblyCopyObject
                         Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
 
                         'recall this sub by getting the occurence of the component to be replaced by
-                        _form.Label_CopyComplete.Text = "Replacing: " & subAsy.OriginalName & " with " & subAsy.NewFullFileName
+                        _form.LB_CopyComplete.Text = "Replacing: " & subAsy.OriginalName & " with " & subAsy.NewFullFileName
                         curOcc.Replace(subAsy.NewFullFileName, True)
 
                         'we need to update the part number in the iProperties of components that have a new component name
@@ -715,7 +715,7 @@ Friend Class AssemblyCopyObject
                 If part.SubType IsNot "Content Center Part" Then
                     'This replaces all occurrences so no need to replace duplicates separately"
                     Debug.WriteLine("Replacing Frame part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
-                    _form.Label_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
+                    _form.LB_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
                     Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name)
                     curOcc.Replace(part.NewFullFileName, True)
 
@@ -739,7 +739,7 @@ Friend Class AssemblyCopyObject
                 Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
 
                 'recall this sub by getting the occurence of the component to be replaced by 
-                _form.Label_CopyComplete.Text = "Replacing: " & subAsy.OriginalName & " with " & subAsy.NewFullFileName
+                _form.LB_CopyComplete.Text = "Replacing: " & subAsy.OriginalName & " with " & subAsy.NewFullFileName
                 curOcc.Replace(subAsy.NewFullFileName, True)
 
                 'we need to update the part number in the iProperties of components that have a new component name

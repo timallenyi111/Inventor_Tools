@@ -22,46 +22,50 @@ Partial Class AssemblyCopyToolForm
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
-        Label1 = New Label()
-        Label2 = New Label()
+        LB_ProjectDirectory = New Label()
+        LB_FileName = New Label()
         TB_ProjDir = New TextBox()
         TB_FileName = New TextBox()
         TV_nComponent = New TreeView()
         CopyButton = New Button()
-        Label3 = New Label()
+        LB_NewDirectory = New Label()
         TB_newDir = New TextBox()
         NewDirectoryFolderBrowser = New FolderBrowserDialog()
         newDirButton = New Button()
-        Label4 = New Label()
-        TB_NewAssemblyName = New TextBox()
+        LB_Prefix = New Label()
         TB_Suffix = New TextBox()
         TB_Prefix = New TextBox()
         TestButton = New Button()
-        Label_CopyComplete = New Label()
+        LB_CopyComplete = New Label()
+        LB_Suffix = New Label()
+        GB_PreSuffix = New GroupBox()
+        BT_PreSuffix = New Button()
+        GB_PreSuffix.SuspendLayout()
         SuspendLayout()
         ' 
-        ' Label1
+        ' LB_ProjectDirectory
         ' 
-        Label1.AutoSize = True
-        Label1.Location = New Point(66, 26)
-        Label1.Name = "Label1"
-        Label1.Size = New Size(184, 29)
-        Label1.TabIndex = 20
-        Label1.Text = "Project Directory:"
-        Label1.TextAlign = ContentAlignment.MiddleLeft
+        LB_ProjectDirectory.AutoSize = True
+        LB_ProjectDirectory.Location = New Point(66, 26)
+        LB_ProjectDirectory.Name = "LB_ProjectDirectory"
+        LB_ProjectDirectory.Size = New Size(184, 29)
+        LB_ProjectDirectory.TabIndex = 20
+        LB_ProjectDirectory.Text = "Project Directory:"
+        LB_ProjectDirectory.TextAlign = ContentAlignment.MiddleLeft
         ' 
-        ' Label2
+        ' LB_FileName
         ' 
-        Label2.AutoSize = True
-        Label2.Location = New Point(132, 79)
-        Label2.Name = "Label2"
-        Label2.Size = New Size(118, 29)
-        Label2.TabIndex = 19
-        Label2.Text = "File Name:"
-        Label2.TextAlign = ContentAlignment.MiddleLeft
+        LB_FileName.AutoSize = True
+        LB_FileName.Location = New Point(132, 79)
+        LB_FileName.Name = "LB_FileName"
+        LB_FileName.Size = New Size(118, 29)
+        LB_FileName.TabIndex = 19
+        LB_FileName.Text = "File Name:"
+        LB_FileName.TextAlign = ContentAlignment.MiddleLeft
         ' 
         ' TB_ProjDir
         ' 
+        TB_ProjDir.BorderStyle = BorderStyle.FixedSingle
         TB_ProjDir.Location = New Point(263, 18)
         TB_ProjDir.Margin = New Padding(2, 3, 2, 3)
         TB_ProjDir.Name = "TB_ProjDir"
@@ -72,6 +76,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' TB_FileName
         ' 
+        TB_FileName.BorderStyle = BorderStyle.FixedSingle
         TB_FileName.Location = New Point(263, 71)
         TB_FileName.Margin = New Padding(2, 3, 2, 3)
         TB_FileName.Name = "TB_FileName"
@@ -87,44 +92,45 @@ Partial Class AssemblyCopyToolForm
         TV_nComponent.FullRowSelect = True
         TV_nComponent.HideSelection = False
         TV_nComponent.LabelEdit = True
-        TV_nComponent.Location = New Point(25, 150)
+        TV_nComponent.Location = New Point(27, 195)
         TV_nComponent.Name = "TV_nComponent"
-        TV_nComponent.Size = New Size(662, 700)
+        TV_nComponent.Size = New Size(800, 800)
         TV_nComponent.TabIndex = 10
         TV_nComponent.TabStop = False
         ' 
         ' CopyButton
         ' 
         CopyButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        CopyButton.Location = New Point(615, 1300)
+        CopyButton.Location = New Point(458, 1043)
         CopyButton.Name = "CopyButton"
         CopyButton.Size = New Size(170, 70)
         CopyButton.TabIndex = 8
         CopyButton.Text = "Copy"
         CopyButton.UseVisualStyleBackColor = True
         ' 
-        ' Label3
+        ' LB_NewDirectory
         ' 
-        Label3.AutoSize = True
-        Label3.Location = New Point(90, 875)
-        Label3.Name = "Label3"
-        Label3.Size = New Size(160, 29)
-        Label3.TabIndex = 18
-        Label3.Text = "New Directory:"
-        Label3.TextAlign = ContentAlignment.MiddleLeft
+        LB_NewDirectory.AutoSize = True
+        LB_NewDirectory.Location = New Point(98, 135)
+        LB_NewDirectory.Name = "LB_NewDirectory"
+        LB_NewDirectory.Size = New Size(160, 29)
+        LB_NewDirectory.TabIndex = 18
+        LB_NewDirectory.Text = "New Directory:"
+        LB_NewDirectory.TextAlign = ContentAlignment.MiddleLeft
         ' 
         ' TB_newDir
         ' 
-        TB_newDir.Location = New Point(247, 867)
+        TB_newDir.BorderStyle = BorderStyle.FixedSingle
+        TB_newDir.Location = New Point(263, 132)
         TB_newDir.Margin = New Padding(2, 3, 2, 3)
         TB_newDir.Name = "TB_newDir"
-        TB_newDir.Size = New Size(983, 37)
+        TB_newDir.Size = New Size(644, 37)
         TB_newDir.TabIndex = 1
         TB_newDir.Tag = "t"
         ' 
         ' newDirButton
         ' 
-        newDirButton.Location = New Point(1235, 872)
+        newDirButton.Location = New Point(1038, 135)
         newDirButton.Name = "newDirButton"
         newDirButton.Size = New Size(112, 34)
         newDirButton.TabIndex = 4
@@ -132,28 +138,19 @@ Partial Class AssemblyCopyToolForm
         newDirButton.Text = "Browse"
         newDirButton.UseVisualStyleBackColor = True
         ' 
-        ' Label4
+        ' LB_Prefix
         ' 
-        Label4.AutoSize = True
-        Label4.Location = New Point(25, 926)
-        Label4.Name = "Label4"
-        Label4.Size = New Size(231, 29)
-        Label4.TabIndex = 3
-        Label4.Text = "New Assembly Name: "
-        Label4.TextAlign = ContentAlignment.MiddleLeft
-        ' 
-        ' TB_NewAssemblyName
-        ' 
-        TB_NewAssemblyName.Location = New Point(391, 918)
-        TB_NewAssemblyName.Margin = New Padding(2, 3, 2, 3)
-        TB_NewAssemblyName.Name = "TB_NewAssemblyName"
-        TB_NewAssemblyName.Size = New Size(440, 37)
-        TB_NewAssemblyName.TabIndex = 2
-        TB_NewAssemblyName.Tag = "t"
+        LB_Prefix.AutoSize = True
+        LB_Prefix.Location = New Point(-3, 35)
+        LB_Prefix.Name = "LB_Prefix"
+        LB_Prefix.Size = New Size(74, 29)
+        LB_Prefix.TabIndex = 3
+        LB_Prefix.Text = "Prefix:"
+        LB_Prefix.TextAlign = ContentAlignment.MiddleLeft
         ' 
         ' TB_Suffix
         ' 
-        TB_Suffix.Location = New Point(835, 918)
+        TB_Suffix.Location = New Point(104, 107)
         TB_Suffix.Margin = New Padding(2, 3, 2, 3)
         TB_Suffix.Name = "TB_Suffix"
         TB_Suffix.Size = New Size(131, 37)
@@ -162,77 +159,117 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' TB_Prefix
         ' 
-        TB_Prefix.Location = New Point(247, 918)
+        TB_Prefix.Location = New Point(83, 35)
         TB_Prefix.Margin = New Padding(2, 3, 2, 3)
         TB_Prefix.Name = "TB_Prefix"
-        TB_Prefix.Size = New Size(140, 37)
+        TB_Prefix.Size = New Size(165, 37)
         TB_Prefix.TabIndex = 22
-        TB_Prefix.Tag = "t"
-        TB_Prefix.TextAlign = HorizontalAlignment.Right
+        TB_Prefix.Tag = ""
         ' 
         ' TestButton
         ' 
         TestButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
-        TestButton.Location = New Point(806, 1300)
+        TestButton.Location = New Point(662, 1043)
         TestButton.Name = "TestButton"
-        TestButton.Size = New Size(170, 70)
+        TestButton.Size = New Size(80, 70)
         TestButton.TabIndex = 24
         TestButton.Text = "Test"
         TestButton.UseVisualStyleBackColor = True
+        TestButton.Visible = False
         ' 
-        ' Label_CopyComplete
+        ' LB_CopyComplete
         ' 
-        Label_CopyComplete.AutoSize = True
-        Label_CopyComplete.Location = New Point(621, 1235)
-        Label_CopyComplete.Name = "Label_CopyComplete"
-        Label_CopyComplete.Size = New Size(179, 29)
-        Label_CopyComplete.TabIndex = 25
-        Label_CopyComplete.Text = "COPY COMPLETE"
-        Label_CopyComplete.Visible = False
+        LB_CopyComplete.AutoSize = True
+        LB_CopyComplete.Location = New Point(458, 998)
+        LB_CopyComplete.Name = "LB_CopyComplete"
+        LB_CopyComplete.Size = New Size(179, 29)
+        LB_CopyComplete.TabIndex = 25
+        LB_CopyComplete.Text = "COPY COMPLETE"
+        LB_CopyComplete.Visible = False
+        ' 
+        ' LB_Suffix
+        ' 
+        LB_Suffix.AutoSize = True
+        LB_Suffix.Location = New Point(3, 104)
+        LB_Suffix.Name = "LB_Suffix"
+        LB_Suffix.Size = New Size(72, 29)
+        LB_Suffix.TabIndex = 26
+        LB_Suffix.Text = "Suffix:"
+        LB_Suffix.TextAlign = ContentAlignment.MiddleLeft
+        ' 
+        ' GB_PreSuffix
+        ' 
+        GB_PreSuffix.Controls.Add(BT_PreSuffix)
+        GB_PreSuffix.Controls.Add(TB_Prefix)
+        GB_PreSuffix.Controls.Add(LB_Suffix)
+        GB_PreSuffix.Controls.Add(TB_Suffix)
+        GB_PreSuffix.Controls.Add(LB_Prefix)
+        GB_PreSuffix.FlatStyle = FlatStyle.System
+        GB_PreSuffix.Location = New Point(843, 195)
+        GB_PreSuffix.Margin = New Padding(0)
+        GB_PreSuffix.Name = "GB_PreSuffix"
+        GB_PreSuffix.Padding = New Padding(0)
+        GB_PreSuffix.Size = New Size(323, 253)
+        GB_PreSuffix.TabIndex = 27
+        GB_PreSuffix.TabStop = False
+        ' 
+        ' BT_PreSuffix
+        ' 
+        BT_PreSuffix.Location = New Point(104, 176)
+        BT_PreSuffix.Margin = New Padding(0)
+        BT_PreSuffix.Name = "BT_PreSuffix"
+        BT_PreSuffix.Size = New Size(100, 45)
+        BT_PreSuffix.TabIndex = 27
+        BT_PreSuffix.Text = "Apply"
+        BT_PreSuffix.UseVisualStyleBackColor = True
         ' 
         ' AssemblyCopyToolForm
         ' 
         AutoScaleDimensions = New SizeF(12F, 29F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(1400, 1400)
-        Controls.Add(Label_CopyComplete)
+        ClientSize = New Size(1178, 1144)
+        Controls.Add(GB_PreSuffix)
+        Controls.Add(LB_CopyComplete)
         Controls.Add(TestButton)
-        Controls.Add(TB_Prefix)
-        Controls.Add(TB_Suffix)
-        Controls.Add(TB_NewAssemblyName)
-        Controls.Add(Label4)
         Controls.Add(newDirButton)
         Controls.Add(TB_newDir)
-        Controls.Add(Label3)
+        Controls.Add(LB_NewDirectory)
         Controls.Add(CopyButton)
         Controls.Add(TV_nComponent)
         Controls.Add(TB_FileName)
         Controls.Add(TB_ProjDir)
-        Controls.Add(Label2)
-        Controls.Add(Label1)
+        Controls.Add(LB_FileName)
+        Controls.Add(LB_ProjectDirectory)
         Font = New Font("Calibri", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        FormBorderStyle = FormBorderStyle.FixedSingle
         Margin = New Padding(3, 4, 3, 4)
+        MaximizeBox = False
         Name = "AssemblyCopyToolForm"
+        SizeGripStyle = SizeGripStyle.Hide
         Text = "Assembly Copy Tool"
+        GB_PreSuffix.ResumeLayout(False)
+        GB_PreSuffix.PerformLayout()
         ResumeLayout(False)
         PerformLayout()
     End Sub
 
-    Friend WithEvents Label1 As Label
-    Friend WithEvents Label2 As Label
+    Friend WithEvents LB_ProjectDirectory As Label
+    Friend WithEvents LB_FileName As Label
     Friend WithEvents TB_ProjDir As TextBox
     Friend WithEvents TB_FileName As TextBox
     Friend WithEvents TV_nComponent As TreeView
     Friend WithEvents CopyButton As Button
-    Friend WithEvents Label3 As Label
+    Friend WithEvents LB_NewDirectory As Label
     Friend WithEvents TB_newDir As TextBox
     Friend WithEvents NewDirectoryFolderBrowser As FolderBrowserDialog
     Friend WithEvents newDirButton As Button
-    Friend WithEvents Label4 As Label
-    Friend WithEvents TB_NewAssemblyName As TextBox
+    Friend WithEvents LB_Prefix As Label
     Friend WithEvents TB_Suffix As TextBox
     Friend WithEvents TB_Prefix As TextBox
     Friend WithEvents TestButton As Button
-    Friend WithEvents Label_CopyComplete As Label
+    Friend WithEvents LB_CopyComplete As Label
+    Friend WithEvents LB_Suffix As Label
+    Friend WithEvents GB_PreSuffix As GroupBox
+    Friend WithEvents BT_PreSuffix As Button
 
 End Class
