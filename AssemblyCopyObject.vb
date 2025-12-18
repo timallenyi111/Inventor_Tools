@@ -573,7 +573,14 @@ Friend Class AssemblyCopyObject
                         'This replaces all occurrences so no need to replace duplicates separately
                         Debug.WriteLine("Replacing part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
                         _form.Label_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name
-                        newAsmOccs.ItemByName(part.OriginalComponentOccurence.Name).Replace(part.NewFullFileName, True)
+                        Dim curOcc As ComponentOccurrence = newAsmOccs.ItemByName(part.OriginalComponentOccurence.Name)
+                        curOcc.Replace(part.NewFullFileName, True)
+                        'we need to update the part number in the iProperties of components that have a new component name
+                        If part.OriginalName IsNot part.NewName Then
+                            Dim replacedPartDoc As PartDocument = _invApp.Documents.ItemByName(part.NewFullFileName)
+                            replacedPartDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = part.NewName
+                            curOcc.Name = part.NewName
+                        End If
                     End If
                 Next
             End If

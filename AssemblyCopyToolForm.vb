@@ -14,10 +14,11 @@ Friend Class AssemblyCopyToolForm
     Public oAsmDoc As Inventor.AssemblyDocument
     Public _stream As FileStream
     Public _writer As StreamWriter
+    Public doubleClickNode As TreeNode
 
-    Dim oAsmCompDef As AssemblyComponentDefinition
-    Dim newDirectory As String
-    Dim rootAssemblyObject As AssemblyCopyObject
+    Private oAsmCompDef As AssemblyComponentDefinition
+    Private newDirectory As String
+    Private rootAssemblyObject As AssemblyCopyObject
     Dim defaultSuffix As String = "_2"
     Dim defaultPrefix As String = ""
     Dim medium_gap As Integer = 10
@@ -176,6 +177,7 @@ Friend Class AssemblyCopyToolForm
         rootAssemblyObject.CreateNewFiles(dryrun:=False)
         rootAssemblyObject.ReplaceOccurences()
         Label_CopyComplete.Text = "Assembly Copy Complete!"
+        _invApp.ActiveDocument.Save2()
     End Sub
 
     Private Sub NewDirButton_Click(sender As Object, e As EventArgs) Handles newDirButton.Click
@@ -318,13 +320,13 @@ Friend Class AssemblyCopyToolForm
     ''' </summary>
     ''' <param name="textBox"></param>
     ''' <param name="msg"></param>
-    Sub LongTextboxWrite(ByRef textBox As System.Windows.Forms.TextBox, ByRef msg As String)
+    Private Sub LongTextboxWrite(ByRef textBox As System.Windows.Forms.TextBox, ByRef msg As String)
         textBox.Text = msg
         textBox.SelectionStart = textBox.Text.Length
         textBox.SelectionLength = 0
         textBox.ScrollToCaret()
     End Sub
-    Sub MoveCaret(ByRef textBox As System.Windows.Forms.TextBox)
+    Private Sub MoveCaret(ByRef textBox As System.Windows.Forms.TextBox)
         textBox.SelectionStart = 0
         textBox.SelectionLength = 0
         textBox.ScrollToCaret()
@@ -332,8 +334,9 @@ Friend Class AssemblyCopyToolForm
         textBox.SelectionLength = 0
         textBox.ScrollToCaret()
     End Sub
-    
+#End Region
 
+#Region "Tree View Events"
     ' When a node is clicked, select it and give the treeview focus so the highlight is visible
     Private Sub TV_nComponent_NodeMouseClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles TV_nComponent.NodeMouseClick
         highlightSet.Clear()
@@ -361,6 +364,12 @@ Friend Class AssemblyCopyToolForm
 
         'rootAssemblyObject.HighlightOccurenceByNode(TV_nComponent.SelectedNode)
     End Sub
+
+    Private Sub TV_nComponent_NodeMouseDoubleClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles TV_nComponent.NodeMouseDoubleClick
+        doubleClickNode = e.Node
+        Component_Modification.Show()
+    End Sub
+
 
 #End Region
 

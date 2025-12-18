@@ -7,10 +7,10 @@
 
 ###To-Do before v0.1
 - [ ] Make a Thumbnail
-- [ ] Allow renaming of individual components
-- [ ] Remove the original tree node
-- [ ] Allow the option to not copy certain components
-- [ ] Remove the main menu for v0.1
+- [x] Allow renaming of individual components
+- [x] Remove the original tree node
+- [x] Allow the option to not copy certain components
+- [x] Remove the main menu for v0.1
 - [ ] Modernize the UI
 
 ### Notes

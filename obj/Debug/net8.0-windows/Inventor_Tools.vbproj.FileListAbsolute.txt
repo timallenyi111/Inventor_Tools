@@ -44,3 +44,4 @@ C:\Users\TimAllen\source\repos\timallenyi111\Inventor_Tools\obj\Debug\net8.0-win
 C:\Users\TimAllen\source\repos\timallenyi111\Inventor_Tools\obj\Debug\net8.0-windows\Inventor_Tools.pdb
 C:\Users\TimAllen\source\repos\timallenyi111\Inventor_Tools\obj\Debug\net8.0-windows\Inventor_Tools.genruntimeconfig.cache
 C:\Users\TimAllen\source\repos\timallenyi111\Inventor_Tools\obj\Debug\net8.0-windows\ref\Inventor_Tools.dll
+C:\Users\TimAllen\source\repos\timallenyi111\Inventor_Tools\obj\Debug\net8.0-windows\Inventor_Tools.Component_Modification.resources
