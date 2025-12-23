@@ -22,6 +22,7 @@ Partial Class AssemblyCopyToolForm
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()>
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(AssemblyCopyToolForm))
         LB_ProjectDirectory = New Label()
         LB_FileName = New Label()
         TB_ProjDir = New TextBox()
@@ -40,12 +41,14 @@ Partial Class AssemblyCopyToolForm
         LB_Suffix = New Label()
         GB_PreSuffix = New GroupBox()
         BT_PreSuffix = New Button()
+        LB_TestLabel = New Label()
         GB_PreSuffix.SuspendLayout()
         SuspendLayout()
         ' 
         ' LB_ProjectDirectory
         ' 
         LB_ProjectDirectory.AutoSize = True
+        LB_ProjectDirectory.ForeColor = SystemColors.ControlText
         LB_ProjectDirectory.Location = New Point(66, 26)
         LB_ProjectDirectory.Name = "LB_ProjectDirectory"
         LB_ProjectDirectory.Size = New Size(184, 29)
@@ -56,6 +59,7 @@ Partial Class AssemblyCopyToolForm
         ' LB_FileName
         ' 
         LB_FileName.AutoSize = True
+        LB_FileName.ForeColor = SystemColors.ControlText
         LB_FileName.Location = New Point(132, 79)
         LB_FileName.Name = "LB_FileName"
         LB_FileName.Size = New Size(118, 29)
@@ -65,6 +69,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' TB_ProjDir
         ' 
+        TB_ProjDir.BackColor = Color.Silver
         TB_ProjDir.BorderStyle = BorderStyle.FixedSingle
         TB_ProjDir.Location = New Point(263, 18)
         TB_ProjDir.Margin = New Padding(2, 3, 2, 3)
@@ -76,6 +81,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' TB_FileName
         ' 
+        TB_FileName.BackColor = Color.Silver
         TB_FileName.BorderStyle = BorderStyle.FixedSingle
         TB_FileName.Location = New Point(263, 71)
         TB_FileName.Margin = New Padding(2, 3, 2, 3)
@@ -88,6 +94,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' TV_nComponent
         ' 
+        TV_nComponent.BackColor = Color.Silver
         TV_nComponent.BorderStyle = BorderStyle.FixedSingle
         TV_nComponent.FullRowSelect = True
         TV_nComponent.HideSelection = False
@@ -100,17 +107,21 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' CopyButton
         ' 
+        CopyButton.BackColor = SystemColors.ControlDark
+        CopyButton.FlatStyle = FlatStyle.Flat
         CopyButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        CopyButton.ForeColor = SystemColors.ControlText
         CopyButton.Location = New Point(458, 1043)
         CopyButton.Name = "CopyButton"
         CopyButton.Size = New Size(170, 70)
         CopyButton.TabIndex = 8
         CopyButton.Text = "Copy"
-        CopyButton.UseVisualStyleBackColor = True
+        CopyButton.UseVisualStyleBackColor = False
         ' 
         ' LB_NewDirectory
         ' 
         LB_NewDirectory.AutoSize = True
+        LB_NewDirectory.ForeColor = SystemColors.ControlText
         LB_NewDirectory.Location = New Point(98, 135)
         LB_NewDirectory.Name = "LB_NewDirectory"
         LB_NewDirectory.Size = New Size(160, 29)
@@ -120,6 +131,7 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' TB_newDir
         ' 
+        TB_newDir.BackColor = Color.Silver
         TB_newDir.BorderStyle = BorderStyle.FixedSingle
         TB_newDir.Location = New Point(263, 132)
         TB_newDir.Margin = New Padding(2, 3, 2, 3)
@@ -130,17 +142,22 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' newDirButton
         ' 
+        newDirButton.BackColor = SystemColors.ControlDark
+        newDirButton.FlatStyle = FlatStyle.Flat
+        newDirButton.Font = New Font("Calibri", 12F, FontStyle.Bold)
+        newDirButton.ForeColor = SystemColors.ControlText
         newDirButton.Location = New Point(1038, 135)
         newDirButton.Name = "newDirButton"
-        newDirButton.Size = New Size(112, 34)
+        newDirButton.Size = New Size(112, 45)
         newDirButton.TabIndex = 4
         newDirButton.TabStop = False
         newDirButton.Text = "Browse"
-        newDirButton.UseVisualStyleBackColor = True
+        newDirButton.UseVisualStyleBackColor = False
         ' 
         ' LB_Prefix
         ' 
         LB_Prefix.AutoSize = True
+        LB_Prefix.ForeColor = SystemColors.ControlText
         LB_Prefix.Location = New Point(-3, 35)
         LB_Prefix.Name = "LB_Prefix"
         LB_Prefix.Size = New Size(74, 29)
@@ -150,6 +167,8 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' TB_Suffix
         ' 
+        TB_Suffix.BackColor = Color.Silver
+        TB_Suffix.BorderStyle = BorderStyle.FixedSingle
         TB_Suffix.Location = New Point(104, 107)
         TB_Suffix.Margin = New Padding(2, 3, 2, 3)
         TB_Suffix.Name = "TB_Suffix"
@@ -159,6 +178,8 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' TB_Prefix
         ' 
+        TB_Prefix.BackColor = Color.Silver
+        TB_Prefix.BorderStyle = BorderStyle.FixedSingle
         TB_Prefix.Location = New Point(83, 35)
         TB_Prefix.Margin = New Padding(2, 3, 2, 3)
         TB_Prefix.Name = "TB_Prefix"
@@ -168,13 +189,16 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' TestButton
         ' 
+        TestButton.BackColor = SystemColors.ControlDark
+        TestButton.FlatStyle = FlatStyle.Flat
         TestButton.Font = New Font("Calibri", 14F, FontStyle.Bold, GraphicsUnit.Point, CByte(0))
+        TestButton.ForeColor = SystemColors.ControlText
         TestButton.Location = New Point(662, 1043)
         TestButton.Name = "TestButton"
         TestButton.Size = New Size(80, 70)
         TestButton.TabIndex = 24
         TestButton.Text = "Test"
-        TestButton.UseVisualStyleBackColor = True
+        TestButton.UseVisualStyleBackColor = False
         TestButton.Visible = False
         ' 
         ' LB_CopyComplete
@@ -190,6 +214,7 @@ Partial Class AssemblyCopyToolForm
         ' LB_Suffix
         ' 
         LB_Suffix.AutoSize = True
+        LB_Suffix.ForeColor = SystemColors.ControlText
         LB_Suffix.Location = New Point(3, 104)
         LB_Suffix.Name = "LB_Suffix"
         LB_Suffix.Size = New Size(72, 29)
@@ -205,6 +230,7 @@ Partial Class AssemblyCopyToolForm
         GB_PreSuffix.Controls.Add(TB_Suffix)
         GB_PreSuffix.Controls.Add(LB_Prefix)
         GB_PreSuffix.FlatStyle = FlatStyle.System
+        GB_PreSuffix.ForeColor = SystemColors.ControlDarkDark
         GB_PreSuffix.Location = New Point(843, 195)
         GB_PreSuffix.Margin = New Padding(0)
         GB_PreSuffix.Name = "GB_PreSuffix"
@@ -215,19 +241,36 @@ Partial Class AssemblyCopyToolForm
         ' 
         ' BT_PreSuffix
         ' 
+        BT_PreSuffix.BackColor = SystemColors.ControlDark
+        BT_PreSuffix.FlatStyle = FlatStyle.Flat
+        BT_PreSuffix.Font = New Font("Calibri", 12F, FontStyle.Bold)
+        BT_PreSuffix.ForeColor = SystemColors.ControlText
         BT_PreSuffix.Location = New Point(104, 176)
         BT_PreSuffix.Margin = New Padding(0)
         BT_PreSuffix.Name = "BT_PreSuffix"
         BT_PreSuffix.Size = New Size(100, 45)
         BT_PreSuffix.TabIndex = 27
         BT_PreSuffix.Text = "Apply"
-        BT_PreSuffix.UseVisualStyleBackColor = True
+        BT_PreSuffix.UseVisualStyleBackColor = False
+        ' 
+        ' LB_TestLabel
+        ' 
+        LB_TestLabel.AutoSize = True
+        LB_TestLabel.ForeColor = SystemColors.ControlText
+        LB_TestLabel.Location = New Point(870, 891)
+        LB_TestLabel.Name = "LB_TestLabel"
+        LB_TestLabel.Size = New Size(52, 29)
+        LB_TestLabel.TabIndex = 28
+        LB_TestLabel.Text = "Test"
+        LB_TestLabel.TextAlign = ContentAlignment.MiddleLeft
         ' 
         ' AssemblyCopyToolForm
         ' 
         AutoScaleDimensions = New SizeF(12F, 29F)
         AutoScaleMode = AutoScaleMode.Font
+        BackColor = Color.LightGray
         ClientSize = New Size(1178, 1144)
+        Controls.Add(LB_TestLabel)
         Controls.Add(GB_PreSuffix)
         Controls.Add(LB_CopyComplete)
         Controls.Add(TestButton)
@@ -241,7 +284,9 @@ Partial Class AssemblyCopyToolForm
         Controls.Add(LB_FileName)
         Controls.Add(LB_ProjectDirectory)
         Font = New Font("Calibri", 12F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        ForeColor = SystemColors.ControlDarkDark
         FormBorderStyle = FormBorderStyle.FixedSingle
+        Icon = CType(resources.GetObject("$this.Icon"), Icon)
         Margin = New Padding(3, 4, 3, 4)
         MaximizeBox = False
         Name = "AssemblyCopyToolForm"
@@ -271,5 +316,6 @@ Partial Class AssemblyCopyToolForm
     Friend WithEvents LB_Suffix As Label
     Friend WithEvents GB_PreSuffix As GroupBox
     Friend WithEvents BT_PreSuffix As Button
+    Friend WithEvents LB_TestLabel As Label
 
 End Class

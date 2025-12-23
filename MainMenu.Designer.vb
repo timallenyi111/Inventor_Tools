@@ -22,24 +22,34 @@ Partial Class MainMenu
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(MainMenu))
         AssemblyCopyToolButton = New Button()
         SuspendLayout()
         ' 
         ' AssemblyCopyToolButton
         ' 
-        AssemblyCopyToolButton.Location = New Point(292, 187)
+        AssemblyCopyToolButton.BackColor = SystemColors.ControlDark
+        AssemblyCopyToolButton.FlatStyle = FlatStyle.Flat
+        AssemblyCopyToolButton.ForeColor = SystemColors.ControlText
+        AssemblyCopyToolButton.Location = New Point(200, 100)
+        AssemblyCopyToolButton.Margin = New Padding(0)
         AssemblyCopyToolButton.Name = "AssemblyCopyToolButton"
-        AssemblyCopyToolButton.Size = New Size(232, 48)
+        AssemblyCopyToolButton.Size = New Size(200, 50)
         AssemblyCopyToolButton.TabIndex = 0
-        AssemblyCopyToolButton.Text = "Assembly Copy Tool"
-        AssemblyCopyToolButton.UseVisualStyleBackColor = True
+        AssemblyCopyToolButton.Text = "Load Model"
+        AssemblyCopyToolButton.UseVisualStyleBackColor = False
         ' 
         ' MainMenu
         ' 
-        AutoScaleDimensions = New SizeF(11F, 25F)
+        AutoScaleDimensions = New SizeF(10F, 25F)
         AutoScaleMode = AutoScaleMode.Font
-        ClientSize = New Size(800, 450)
+        BackColor = Color.LightGray
+        ClientSize = New Size(578, 244)
         Controls.Add(AssemblyCopyToolButton)
+        ForeColor = SystemColors.ControlDarkDark
+        FormBorderStyle = FormBorderStyle.FixedSingle
+        Icon = CType(resources.GetObject("$this.Icon"), Icon)
+        MaximizeBox = False
         Name = "MainMenu"
         Text = "MainMenu"
         ResumeLayout(False)

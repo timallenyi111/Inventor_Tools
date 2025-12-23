@@ -64,6 +64,11 @@ Friend Class AssemblyCopyToolForm
 
         Debug.WriteLine(_invApp.DesignProjectManager.ActiveDesignProject.ContentCenterPath)
 
+        'testing getting a component count for a loading bar
+        Dim curDoc As AssemblyDocument = _invApp.ActiveDocument
+        Dim componentCount As Integer = GetTotalNumberOfComponents(curDoc.ComponentDefinition.Occurrences)
+        LB_TestLabel.Text = componentCount
+
         ' we have to set the default prefix and suffix textboxes before assembly object setup
         ' because the assembly object setup references these values
         TB_Prefix.Text = defaultPrefix
@@ -78,9 +83,7 @@ Friend Class AssemblyCopyToolForm
 
 
         TB_FileName.Text = rootAssemblyObject.OriginalName & ".iam"
-        ' by default the new assembly name is the same as the original
-        ' this is just the middle of the name not including prefix and suffix
-        'TB_NewAssemblyName.Text = rootAssemblyObject.OriginalName
+
 
         LongTextboxWrite(TB_ProjDir, rootAssemblyObject.GetProjectDirectory(_invApp))
         LongTextboxWrite(TB_newDir, rootAssemblyObject.NewRootDirectory)
@@ -123,6 +126,18 @@ Friend Class AssemblyCopyToolForm
 
     End Sub
 
+    Private Function GetTotalNumberOfComponents(ByRef asmOccs As ComponentOccurrences) As Integer
+        Dim occCount As Integer = asmOccs.Count
+
+        For Each occ As ComponentOccurrence In asmOccs
+            If occ.Type = ObjectTypeEnum.kAssemblyComponentDefinitionObject Then
+                Dim occDoc As AssemblyDocument = occ.Definition.Document
+                occCount += GetTotalNumberOfComponents(occDoc.ComponentDefinition.Occurrences)
+            End If
+        Next
+
+        Return occCount
+    End Function
 
 #Region "Form Text Controls"
 

@@ -6,6 +6,7 @@
     <StartupObject>Inventor_Tools.My.MyApplication</StartupObject>
     <UseWindowsForms>true</UseWindowsForms>
     <MyType>WindowsForms</MyType>
+    <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,10 @@
     <Compile Remove="OldCode\InvtAssemblyObj.vb" />
     <Compile Remove="OldCode\InvtComponentObj.vb" />
     <Compile Remove="OldCode\OldFunctions.vb" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Icon.ico" />
   </ItemGroup>
 
   <ItemGroup>
