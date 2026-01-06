@@ -203,13 +203,6 @@ Friend Class AssemblyCopyToolForm
 #Region "Button Clicks"
 
     Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
-        'LB_CopyComplete.Visible = True
-        'LB_CopyComplete.Text = "Starting Process..."
-        'rootAssemblyObject.UpdateNewProperties()
-        'rootAssemblyObject.CreateNewFiles(dryrun:=False)
-        'rootAssemblyObject.ReplaceOccurences()
-        'LB_CopyComplete.Text = "Assembly Copy Complete!"
-        '_invApp.ActiveDocument.Save2()
         CopyButtonHandler(Me, rootAssemblyObject, _invApp, sender, e)
     End Sub
 
@@ -225,10 +218,6 @@ Friend Class AssemblyCopyToolForm
     End Sub
 
     Private Sub TestButton_Click(sender As Object, e As EventArgs) Handles TestButton.Click
-        'ReadSelectSet(_invApp)
-        'CreateAttributeLog(_invApp)
-        'GetRootAssemblyAttributes(_invApp)
-        'ReadSelectionAttributes(_invApp)
         TestButtonClickHandler(sender, e, invApp:=_invApp)
     End Sub
 
