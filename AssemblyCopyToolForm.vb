@@ -28,7 +28,7 @@ Friend Class AssemblyCopyToolForm
     '****************************
 #Region "Program Settings"
     Dim logPath As String = "C:\Users\TimAllen\source\repos\timallenyi111\Inventor_Tools\LogFiles\"
-    Dim EnableLog As Boolean = False
+    Dim EnableLog As Boolean = True
     Dim EnableNodeHighlighting As Boolean = False
 
 #End Region
@@ -63,6 +63,10 @@ Friend Class AssemblyCopyToolForm
         End If
 
         Debug.WriteLine(_invApp.DesignProjectManager.ActiveDesignProject.ContentCenterPath)
+        Dim documents As Inventor.Documents = _invApp.Documents
+        For Each doc As Inventor.Document In documents
+            Debug.WriteLine(doc.FullFileName)
+        Next
 
         'testing getting a component count for a loading bar
         Dim curDoc As AssemblyDocument = _invApp.ActiveDocument
@@ -180,7 +184,6 @@ Friend Class AssemblyCopyToolForm
 
 #End Region
 
-
 #Region "Button Clicks"
 
     Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
@@ -214,6 +217,9 @@ Friend Class AssemblyCopyToolForm
         Dim oNodeText As String = node.Text
         node.Text = TB_Prefix.Text & oNodeText & TB_Suffix.Text
     End Sub
+
+
+
 
 #End Region
 
@@ -268,7 +274,7 @@ Friend Class AssemblyCopyToolForm
             TestButton.Left = CopyButton.Left + CopyButton.Width + medium_gap
             TestButton.Top = CopyButton.Top
 
-            LB_CopyComplete.Left = CInt(clientWidth / 2) - CInt(LB_CopyComplete.Width / 2)
+            LB_CopyComplete.Left = medium_gap
             LB_CopyComplete.Top = CopyButton.Top - LB_CopyComplete.Height - medium_gap
 
             TV_nComponent.Top = LB_NewDirectory.Top + LB_NewDirectory.Height + standardHeight
@@ -364,6 +370,8 @@ Friend Class AssemblyCopyToolForm
         textBox.SelectionLength = 0
         textBox.ScrollToCaret()
     End Sub
+
+
 #End Region
 
 #Region "Tree View Events"
@@ -404,10 +412,10 @@ Friend Class AssemblyCopyToolForm
     ''' Marks components that should not be copied by changing their background color to Gray
     ''' </summary>
     Public Sub DontCopyNode()
-        doubleClickNode.BackColor = System.Drawing.Color.Gray
+        doubleClickNode.ForeColor = System.Drawing.Color.Red
         If doubleClickNode.Nodes.Count > 0 Then
             For Each childNode As TreeNode In doubleClickNode.Nodes
-                childNode.BackColor = System.Drawing.Color.Gray
+                childNode.ForeColor = System.Drawing.Color.Red
             Next
         End If
     End Sub
@@ -421,6 +429,10 @@ Friend Class AssemblyCopyToolForm
             MoveCaret(TB_newDir)
         End If
     End Sub
+
+
+
+
 
 
 #End Region

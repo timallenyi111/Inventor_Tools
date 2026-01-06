@@ -38,7 +38,7 @@
         End Get
     End Property
 
-    ReadOnly Property OriginalComponentOccurence As Inventor.ComponentOccurrence
+    ReadOnly Property OriginalComponentOccurrence As Inventor.ComponentOccurrence
         Get
             Return oPartOcc
         End Get
@@ -141,7 +141,7 @@
     End Function
 
     Sub UpdateNewProperties(ByVal rootDirectory As String)
-        If NewTreeNode.BackColor = System.Drawing.Color.Gray Then
+        If NewTreeNode.ForeColor = System.Drawing.Color.Red Then
             CopyEnabled = False
         Else
             nPrtName = nTreeNode.Text

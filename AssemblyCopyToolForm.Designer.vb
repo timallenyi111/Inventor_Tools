@@ -204,9 +204,10 @@ Partial Class AssemblyCopyToolForm
         ' LB_CopyComplete
         ' 
         LB_CopyComplete.AutoSize = True
-        LB_CopyComplete.Location = New Point(458, 998)
+        LB_CopyComplete.Font = New Font("Calibri", 8F, FontStyle.Regular, GraphicsUnit.Point, CByte(0))
+        LB_CopyComplete.Location = New Point(27, 998)
         LB_CopyComplete.Name = "LB_CopyComplete"
-        LB_CopyComplete.Size = New Size(179, 29)
+        LB_CopyComplete.Size = New Size(121, 19)
         LB_CopyComplete.TabIndex = 25
         LB_CopyComplete.Text = "COPY COMPLETE"
         LB_CopyComplete.Visible = False
