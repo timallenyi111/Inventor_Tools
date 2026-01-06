@@ -15,7 +15,9 @@
     Private duplicateOccurrenceList As List(Of Inventor.ComponentOccurrence)
     Private _subType As String
     Private _enableCopy As Boolean = True
+    Private _occurrenceIndex As Integer
 
+#Region "Properties"
     ReadOnly Property OriginalName As String
         Get
             Return oPrtName
@@ -104,6 +106,17 @@
             _enableCopy = value
         End Set
     End Property
+
+    Property OccurrenceIndex As Integer
+        Get
+            Return _occurrenceIndex
+        End Get
+        Set(value As Integer)
+            _occurrenceIndex = value
+        End Set
+    End Property
+
+#End Region
 
     Sub InitialSetup(ByRef PartOcc As Inventor.ComponentOccurrence, ByRef rootDirectory As String,
                      ByRef ParentAssemblyNewNode As TreeNode, ByRef contentCenterPath As String)

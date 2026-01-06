@@ -79,35 +79,85 @@ Module TestFunctions
 
     End Sub
 
-    Sub ReadOccurrenceDefinitionAttributes(ByRef occurrence As Inventor.ComponentOccurrence)
+    'Sub ReadOccurrenceDefinitionAttributes(ByRef _invApp As Inventor.Application)
+    '    Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
+    '    Dim selectSet As Inventor.SelectSet = activeDoc.SelectSet
+    '    For i As Integer = 1 To selectSet.Count
+    '        Dim selectedObj As Object = selectSet.Item(i)
+    '        Dim type As Inventor.ObjectTypeEnum = selectSet.Item(i).Type
+    '        If TypeOf selectedObj Is Inventor.ComponentOccurrence Then
+    '            Dim occ As Inventor.ComponentOccurrence = selectedObj
+    '            Debug.WriteLine("Selected Occurrence: " & occ.Name)
+    '            ReadDefinitionAttributes(occ)
+    '        Else
+    '            Debug.WriteLine("Selected Object is: " & type.ToString)
+    '        End If
+    '        Dim occDef As Inventor.ComponentDefinition = occurrence.Definition
+    '        If occDef.AttributeSets.Count > 0 Then
+    '            Debug.WriteLine(occurrence.Name)
+    '            For Each attSet As Inventor.AttributeSet In occDef.AttributeSets
+    '                Debug.WriteLine("Attribute Set: " & attSet.Name)
+    '                For Each att As Inventor.Attribute In attSet
+    '                    Debug.WriteLine("  Attribute Name: " & att.Name & ", Value: " & att.Value.ToString)
+    '                Next
+    '                Debug.WriteLine("-----")
+    '            Next
+    '        End If
+    '    Next
 
-        Dim occDef As Inventor.ComponentDefinition = occurrence.Definition
-        If occDef.AttributeSets.Count > 0 Then
-            Debug.WriteLine(occurrence.Name)
-            For Each attSet As Inventor.AttributeSet In occDef.AttributeSets
-                Debug.WriteLine("Attribute Set: " & attSet.Name)
-                For Each att As Inventor.Attribute In attSet
-                    Debug.WriteLine("  Attribute Name: " & att.Name & ", Value: " & att.Value.ToString)
-                Next
-                Debug.WriteLine("-----")
-            Next
-        End If
+    'End Sub
 
-    End Sub
-
-    Sub ReadDocumentAttributes(ByRef _invApp As Inventor.Application)
+    Sub ReadSelectionAttributes(ByRef _invApp As Inventor.Application)
         Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
         Dim selectSet As Inventor.SelectSet = activeDoc.SelectSet
         For i As Integer = 1 To selectSet.Count
             Dim selectedObj As Object = selectSet.Item(i)
             Dim type As Inventor.ObjectTypeEnum = selectSet.Item(i).Type
             If TypeOf selectedObj Is Inventor.ComponentOccurrence Then
+                Dim occ As Inventor.ComponentOccurrence = selectedObj
+                Debug.WriteLine("Selected Component: " & occ.Name)
+                Debug.WriteLine("Occurrence Attributes:")
+                For Each attSet As Inventor.AttributeSet In occ.AttributeSets
+                    Debug.WriteLine("Attribute Set: " & attSet.Name)
+                    For Each att As Inventor.Attribute In attSet
+                        Debug.WriteLine(vbCrLf)
+                        Debug.WriteLine("  Attribute Name: " & att.Name & ", Value: " & att.Value)
+                        Debug.WriteLine("  Attribute Name: " & att.Name)
+                        Debug.WriteLine("Value:")
+                        Debug.WriteLine(att.Value)
+                        Debug.WriteLine(vbCrLf)
+                    Next
+                    Debug.WriteLine("-----")
+                Next
+                Debug.WriteLine(vbCrLf & "-----------------------" & vbCrLf)
+
+                'read component definition attributes
+                Debug.WriteLine("Component Definition Attributes:")
+                Dim compDef As Inventor.ComponentDefinition = occ.Definition
+                For Each attSet As Inventor.AttributeSet In compDef.AttributeSets
+                    Debug.WriteLine("Attribute Set: " & attSet.Name)
+                    For Each att As Inventor.Attribute In attSet
+                        Debug.WriteLine(vbCrLf)
+                        Debug.WriteLine("  Attribute Name: " & att.Name)
+                        Debug.WriteLine("Value:")
+                        Debug.WriteLine(att.Value)
+                        Debug.WriteLine(vbCrLf)
+                    Next
+                    Debug.WriteLine("-----")
+                Next
+
+                Debug.WriteLine(vbCrLf & "-----------------------" & vbCrLf)
+
                 Dim doc As Inventor.AssemblyDocument = selectedObj.definition.Document
                 Debug.WriteLine("Selected Document: " & doc.DisplayName)
                 For Each attSet As Inventor.AttributeSet In doc.AttributeSets
                     Debug.WriteLine("Attribute Set: " & attSet.Name)
                     For Each att As Inventor.Attribute In attSet
-                        Debug.WriteLine("  Attribute Name: " & att.Name & ", Value: " & att.Value)
+                        Debug.WriteLine(vbCrLf)
+                        Debug.WriteLine("  Attribute Name: " & att.Name)
+                        Debug.WriteLine("Value:")
+                        Debug.WriteLine(att.Value)
+                        Debug.WriteLine(vbCrLf)
                     Next
                     Debug.WriteLine("-----")
                 Next
@@ -218,6 +268,15 @@ Module TestFunctions
 
 
 
+    End Sub
+
+    Sub NameFirstOccurrence(_invApp As Inventor.Application)
+        Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
+        Dim selectSet As Inventor.SelectSet = activeDoc.SelectSet
+        Dim selectedOcc As Inventor.ComponentOccurrence = selectSet.Item(1)
+        Dim asmDef As Inventor.AssemblyComponentDefinition = selectedOcc.Definition
+        Dim firstOcc As Inventor.ComponentOccurrence = asmDef.Occurrences.Item(1)
+        Debug.WriteLine("First Occurrence Name: " & firstOcc.Name)
     End Sub
 
 End Module

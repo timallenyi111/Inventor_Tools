@@ -85,11 +85,11 @@ Friend Class AssemblyCopyToolForm
             rootAssemblyObject.GenerateSetupLog()
         End If
 
-
         TB_FileName.Text = rootAssemblyObject.OriginalName & ".iam"
 
-
-        LongTextboxWrite(TB_ProjDir, rootAssemblyObject.GetProjectDirectory(_invApp))
+        Dim actProj As Inventor.DesignProject = _invApp.DesignProjectManager.ActiveDesignProject
+        Dim projectDir As String = actProj.FullFileName.Substring(0, actProj.FullFileName.LastIndexOf("\") + 1)
+        LongTextboxWrite(TB_ProjDir, projectDir)
         LongTextboxWrite(TB_newDir, rootAssemblyObject.NewRootDirectory)
 
         ' setup the form layout after assigning values
@@ -97,7 +97,6 @@ Friend Class AssemblyCopyToolForm
 
         ' setup tree view
         TV_nComponent.Nodes.Add(rootAssemblyObject.NewTreeNode)
-
     End Sub
 
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
@@ -111,16 +110,33 @@ Friend Class AssemblyCopyToolForm
         ' _writer.Close()
     End Sub
 
-    Public Sub Log(message As String, Optional ByRef numTabs As Integer = 0, Optional ByRef numLines As Integer = 0)
-        If EnableLog Then
-            Dim x As Integer = 0
+    Public Sub Log(message As String, Optional ByRef numTabs As Integer = 0, Optional ByRef numLines As Integer = 0, Optional ByRef debugWrite As Boolean = True)
+        Dim x As Integer = 0
+        'Write to Debug console
+        If debugWrite Then
+
             While x < numTabs
                 message = vbTab & message
                 x += 1
             End While
 
-            _writer.WriteLine(message)
+            Debug.WriteLine(message)
 
+            x = 0
+            While x < numLines
+                Debug.WriteLine("")
+                x += 1
+            End While
+        End If
+
+        'write to log file
+        If EnableLog Then
+            x = 0
+            While x < numTabs
+                message = vbTab & message
+                x += 1
+            End While
+            _writer.WriteLine(message)
             x = 0
             While x < numLines
                 _writer.WriteLine("")
@@ -187,38 +203,41 @@ Friend Class AssemblyCopyToolForm
 #Region "Button Clicks"
 
     Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
-        LB_CopyComplete.Visible = True
-        LB_CopyComplete.Text = "Starting Process..."
-        rootAssemblyObject.UpdateNewProperties()
-        rootAssemblyObject.CreateNewFiles(dryrun:=False)
-        rootAssemblyObject.ReplaceOccurences()
-        LB_CopyComplete.Text = "Assembly Copy Complete!"
-        _invApp.ActiveDocument.Save2()
+        'LB_CopyComplete.Visible = True
+        'LB_CopyComplete.Text = "Starting Process..."
+        'rootAssemblyObject.UpdateNewProperties()
+        'rootAssemblyObject.CreateNewFiles(dryrun:=False)
+        'rootAssemblyObject.ReplaceOccurences()
+        'LB_CopyComplete.Text = "Assembly Copy Complete!"
+        '_invApp.ActiveDocument.Save2()
+        CopyButtonHandler(Me, rootAssemblyObject, _invApp, sender, e)
     End Sub
 
     Private Sub NewDirButton_Click(sender As Object, e As EventArgs) Handles newDirButton.Click
-        Using NewDirectoryFolderBrowser As New FolderBrowserDialog()
-            NewDirectoryFolderBrowser.SelectedPath = newDirectory
-            If NewDirectoryFolderBrowser.ShowDialog() = DialogResult.OK Then
-                newDirectory = NewDirectoryFolderBrowser.SelectedPath & "\"
-                TB_newDir.Text = newDirectory
-            End If
-        End Using
+        'Using NewDirectoryFolderBrowser As New FolderBrowserDialog()
+        '    NewDirectoryFolderBrowser.SelectedPath = newDirectory
+        '    If NewDirectoryFolderBrowser.ShowDialog() = DialogResult.OK Then
+        '        newDirectory = NewDirectoryFolderBrowser.SelectedPath & "\"
+        '        TB_newDir.Text = newDirectory
+        '    End If
+        'End Using
+        NewDirectoryButtonHandler(Me, sender, e)
     End Sub
 
     Private Sub TestButton_Click(sender As Object, e As EventArgs) Handles TestButton.Click
         'ReadSelectSet(_invApp)
         'CreateAttributeLog(_invApp)
         'GetRootAssemblyAttributes(_invApp)
-        ReadDocumentAttributes(_invApp)
+        'ReadSelectionAttributes(_invApp)
+        TestButtonClickHandler(sender, e, invApp:=_invApp)
     End Sub
+
     Private Sub BT_PreSuffix_Click(sender As Object, e As EventArgs) Handles BT_PreSuffix.Click
-        Dim node As TreeNode = TV_nComponent.SelectedNode
-        Dim oNodeText As String = node.Text
-        node.Text = TB_Prefix.Text & oNodeText & TB_Suffix.Text
+        'Dim node As TreeNode = TV_nComponent.SelectedNode
+        'Dim oNodeText As String = node.Text
+        'node.Text = TB_Prefix.Text & oNodeText & TB_Suffix.Text
+        BT_PrefixSuffixHandler(Me, sender, e)
     End Sub
-
-
 
 
 #End Region
@@ -323,33 +342,11 @@ Friend Class AssemblyCopyToolForm
         ResetCarets()
 
     End Sub
+
     Private Sub ResetCarets()
         MoveCaret(TB_ProjDir)
         MoveCaret(TB_newDir)
     End Sub
-
-    'Private Sub AssemblyCopyToolForm_Resize(sender As Object, e As EventArgs) Handles Me.Resize
-    '    FormLayoutSetup(False)
-    '    ResetCarets()
-    'End Sub
-
-    'Private Sub ResizeAssemblyNameLayout()
-    '    Dim clientWidth As Integer = Me.ClientSize.Width
-    '    Dim newAssemblyNameArea As Integer = clientWidth - labelRightEdge - medium_gap
-
-    '    TB_Prefix.Top = LB_Prefix.Top
-    '    TB_Prefix.Left = labelRightEdge
-    '    TB_Prefix.Width = newAssemblyNameArea * 0.1
-
-    '    TB_NewAssemblyName.Top = LB_Prefix.Top
-    '    TB_NewAssemblyName.Left = TB_Prefix.Left + TB_Prefix.Width
-    '    TB_NewAssemblyName.Width = newAssemblyNameArea * 0.8
-
-    '    TB_Suffix.Top = LB_Prefix.Top
-    '    TB_Suffix.Left = TB_NewAssemblyName.Left + TB_NewAssemblyName.Width
-    '    TB_Suffix.Width = newAssemblyNameArea * 0.1
-
-    'End Sub
 
     ''' <summary>
     ''' Writes text in a textbox and scrolls to the end
@@ -362,6 +359,7 @@ Friend Class AssemblyCopyToolForm
         textBox.SelectionLength = 0
         textBox.ScrollToCaret()
     End Sub
+
     Private Sub MoveCaret(ByRef textBox As System.Windows.Forms.TextBox)
         textBox.SelectionStart = 0
         textBox.SelectionLength = 0
@@ -429,11 +427,6 @@ Friend Class AssemblyCopyToolForm
             MoveCaret(TB_newDir)
         End If
     End Sub
-
-
-
-
-
 
 #End Region
 

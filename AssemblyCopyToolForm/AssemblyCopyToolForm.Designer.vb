@@ -199,7 +199,6 @@ Partial Class AssemblyCopyToolForm
         TestButton.TabIndex = 24
         TestButton.Text = "Test"
         TestButton.UseVisualStyleBackColor = False
-        TestButton.Visible = False
         ' 
         ' LB_CopyComplete
         ' 

@@ -4,6 +4,7 @@ Imports System.IO
 
 
 
+
 ''' <summary>
 ''' This stores all of the information necessary to make a copy of an assembly
 ''' </summary>
@@ -26,6 +27,7 @@ Friend Class AssemblyCopyObject
     Private hltSet As HighlightSet
     Private ReadOnly duplicateOccurrenceList As List(Of ComponentOccurrence)
     Private _copyEnabled As Boolean = True
+    Private _occurrenceIndex As Integer
 
     Public Sub New(form As AssemblyCopyToolForm, invApp As Inventor.Application)
         _form = form
@@ -46,8 +48,13 @@ Friend Class AssemblyCopyObject
             ' this is the root assembly         
             SetOriginalProperties(_invApp.ActiveDocument)
             ' define the root directory for the entire assembly
-            nRootDirectory = SetDefaultRootDirectory()
+            Dim actProj As Inventor.DesignProject = _invApp.DesignProjectManager.ActiveDesignProject
+            Dim projectDir As String = actProj.FullFileName.Substring(0, actProj.FullFileName.LastIndexOf("\") + 1)
+            nRootDirectory = projectDir & _form.TB_Prefix.Text & oAsyName & _form.TB_Suffix.Text & "\"
+
             SetNewProperties()
+
+            'create a highlight set to be used for highlighting model components selected in the treeview
             hltSet = _invApp.ActiveDocument.CreateHighlightSet()
         Else
             ' this is a subassembly
@@ -60,6 +67,8 @@ Friend Class AssemblyCopyObject
         _form.Log("", numLines:=1)
         _form.Log("***** " & oAsyName & " component setup *****")
 
+        Dim curOccIndex As Integer = 1
+
         'Perform the initial setup for all components in the assembly
         For Each curOcc As ComponentOccurrence In oAsmDoc.ComponentDefinition.Occurrences
 
@@ -69,6 +78,7 @@ Friend Class AssemblyCopyObject
                     ' perform part setup
                     Dim curPartObject As New InvtPartObj
                     curPartObject.InitialSetup(curOcc, nRootDirectory, nTreeNode, _contentCenterPath)
+                    curPartObject.OccurrenceIndex = curOccIndex
                     prtList.Add(curPartObject)
                 Else
                     _form.Log(curOcc._DisplayName & " was a duplicate")
@@ -84,19 +94,26 @@ Friend Class AssemblyCopyObject
                         Dim frameRootDirectory As String = nRootDirectory + nTreeNode.Text + "\Frame\"
                         curAsmObject.InitialSetup(curOcc, frameRootDirectory, nTreeNode)
                         curAsmObject.SubType = "Frame"
+                        curAsmObject.OccurrenceIndex = curOccIndex
                     ElseIf CheckIfOccurrenceIsBoltedConnection(curOcc) Then
                         Dim boltedConnectionDirectory As String = nRootDirectory + nTreeNode.Text + "\Design Accelerator\"
                         curAsmObject.InitialSetup(curOcc, boltedConnectionDirectory, nTreeNode)
                         curAsmObject.SubType = "Bolted Connection"
+                        curAsmObject.OccurrenceIndex = curOccIndex
                     Else
                         curAsmObject.InitialSetup(curOcc, nRootDirectory, nTreeNode)
+                        curAsmObject.OccurrenceIndex = curOccIndex
                     End If
                     'Debug.WriteLine(curAsmObject.NewFullFileName)
                     subAsyList.Add(curAsmObject)
                 Else
                     _form.Log(curOcc._DisplayName & " was a duplicate")
                 End If
+            Else
+                'unknown component type
+                _form.Log("Unknown component type found: " & curOcc._DisplayName)
             End If
+            curOccIndex += 1
         Next
 
         'these node tags are used for highlighting the components in the assembly treeview
@@ -170,18 +187,18 @@ Friend Class AssemblyCopyObject
         Return asyName
     End Function
 
-    Private Function SetDefaultRootDirectory()
-        Dim rootDirectory As String = GetProjectDirectory(_invApp) & _form.TB_Prefix.Text &
-            oAsyName & _form.TB_Suffix.Text & "\"
+    'Private Function SetDefaultRootDirectory()
+    '    Dim rootDirectory As String = GetProjectDirectory(_invApp) & _form.TB_Prefix.Text &
+    '        oAsyName & _form.TB_Suffix.Text & "\"
 
-        Return rootDirectory
-    End Function
+    '    Return rootDirectory
+    'End Function
 
-    Function GetProjectDirectory(_invApp As Inventor.Application) As String
-        Dim actProj As Inventor.DesignProject = _invApp.DesignProjectManager.ActiveDesignProject
-        Dim projectDir As String = actProj.FullFileName.Substring(0, actProj.FullFileName.LastIndexOf("\") + 1)
-        Return projectDir
-    End Function
+    'Function GetProjectDirectory(_invApp As Inventor.Application) As String
+    '    Dim actProj As Inventor.DesignProject = _invApp.DesignProjectManager.ActiveDesignProject
+    '    Dim projectDir As String = actProj.FullFileName.Substring(0, actProj.FullFileName.LastIndexOf("\") + 1)
+    '    Return projectDir
+    'End Function
 
     ''' <summary>
     ''' Checks for an assembly or part that has the same original full file name in this AssemblyCopyObject Only
@@ -558,15 +575,87 @@ Friend Class AssemblyCopyObject
         End If
     End Sub
 
+    Sub ReplaceOccurrencesByIndex(Optional ByRef asyOcc As ComponentOccurrence = Nothing)
+
+        Dim curAsyOccs As ComponentOccurrences
+        'handle root assembly
+        If asyOcc Is Nothing Then
+            'this is the root assembly
+            'create name value map of options for opening the root assembly
+            Dim nameValueMap As Inventor.NameValueMap = _invApp.TransientObjects.CreateNameValueMap
+            nameValueMap.Add("SkipAllUnresolvedFiles", True)
+
+            ' we need to open the new assembly
+            Dim newAsmDoc As Inventor.AssemblyDocument = _invApp.Documents.OpenWithOptions(nFullFileName, nameValueMap, True)
+
+            'assign the assembly occurrence to the root occurrence
+            curAsyOccs = newAsmDoc.ComponentDefinition.Occurrences
+        Else
+            curAsyOccs = asyOcc.Definition.Occurrences
+        End If
+
+        If subAsyList.Count > 0 Then
+            For Each subAsy As AssemblyCopyObject In subAsyList
+
+                If subAsy.CopyEnabled Then
+
+                    'If subAsy.SubType = "Frame" Then
+                    '    _form.Log("Opening Frame Parent Document: " & subAsy.NewFullFileName)
+                    '    _invApp.Documents.Open(nFullFileName)
+                    '    _form.Log("Active Document: " & _invApp.ActiveDocument.FullFileName)
+                    'End If
+
+                    Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(curAsyOccs, subAsy)
+
+                    ComponentReplace(curOcc, subAsy)
+
+                    'update part number if the name has changed
+                    If subAsy.OriginalName IsNot subAsy.NewName Then
+                        UpdatePartNumber(curOcc, subAsy, _invApp)
+                    End If
+
+                    If subAsy.SubType = "Frame" Then
+                        subAsy.ReplaceFrame(curOcc)
+                        '_invApp.ActiveDocument.Save2()
+                        '_invApp.ActiveDocument.Close(True)
+                    Else
+                        subAsy.ReplaceOccurrencesByIndex(curOcc)
+                    End If
+                Else
+                    _form.Log("Not replacing sub-assembly " & subAsy.OriginalName & " because copy enabled is false")
+                End If
+            Next
+        End If
+
+        If prtList.Count > 0 Then
+            For Each part As InvtPartObj In prtList
+                'skip content center parts and parts that are not enabled for copy
+                If part.SubType = "Content Center Part" Then
+                    _form.Log("Skipping Content Center Part: " & part.OriginalName, numLines:=1)
+                ElseIf part.CopyEnabled = False Then
+                    _form.Log("Skipping Part: " & part.OriginalName & " because copy enabled is false", numLines:=1)
+                Else
+                    Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(curAsyOccs, part)
+                    ComponentReplace(curOcc, part)
+
+                    'update part number if the name has changed
+                    If part.OriginalName IsNot part.NewName Then
+                        UpdatePartNumber(curOcc, part, _invApp)
+                    End If
+                End If
+            Next
+        End If
+
+
+    End Sub
+
     ''' <summary>
     ''' Steps through assemblies and initiates the replacement of components
     ''' (ComponentReplace) handles the actual replacement
     ''' </summary>
     ''' <param name="asyOcc"></param>
     ''' <param name="skelId"></param>
-    Sub ReplaceOccurences(Optional ByRef asyOcc As ComponentOccurrence = Nothing,
-                          Optional ByVal skelId As String = Nothing)
-
+    Sub ReplaceOccurences(Optional ByRef asyOcc As ComponentOccurrence = Nothing)
 
         If asyOcc Is Nothing Then
             'this is the root assembly
@@ -577,136 +666,72 @@ Friend Class AssemblyCopyObject
             ' we need to open the new assembly
             Dim newAsmDoc As Inventor.AssemblyDocument = _invApp.Documents.OpenWithOptions(nFullFileName, nameValueMap, True)
 
-
-            Dim newAsmOccs As Inventor.ComponentOccurrences = newAsmDoc.ComponentDefinition.Occurrences
-
-            'replace the parts in the root assembly
-            If prtList.Count > 0 Then
-                For Each part As InvtPartObj In prtList
-                    'skip content center parts and parts that are not enabled for copy
-                    If part.SubType IsNot "Content Center Part" And part.CopyEnabled = True Then
-                        'This replaces all occurrences so no need to replace duplicates separately
-                        'Debug.WriteLine("Replacing part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
-                        '_form.LB_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name
-                        Dim curOcc As ComponentOccurrence
-                        Try
-                            curOcc = newAsmOccs.ItemByName(part.OriginalComponentOccurrence.Name)
-                        Catch ex As Exception
-                            Debug.WriteLine("Could not find occurrence by name: " & part.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                            _form.Log("Could not find occurrence by name: " & part.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                            curOcc = FindOccurrenceByDocumentFullName(newAsmOccs, part.OriginalFullFileName)
-                        End Try
-                        'curOcc.Replace(part.NewFullFileName, True)
-                        ComponentReplace(curOcc, part.NewFullFileName)
-
-                        'we need to update the part number in the iProperties of components that have a new component name
-                        If part.OriginalName IsNot part.NewName Then
-                            Dim replacedPartDoc As PartDocument = _invApp.Documents.ItemByName(part.NewFullFileName)
-                            replacedPartDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = part.NewName
-                            curOcc.Name = part.NewName
-                        End If
-                    End If
-                Next
-            End If
-
-            'replace sub-assemblies of the root directory
-            If subAsyList.Count > 0 Then
-                For Each subAsy As AssemblyCopyObject In subAsyList
-                    'only replace sub-assemblies that are enabled for copy
-                    If subAsy.CopyEnabled = True Then
-                        'get the occurence of the current subAsy by searching for it by name using the original occurence name
-                        Dim curOcc As ComponentOccurrence
-                        Try
-                            curOcc = newAsmOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
-                        Catch ex As Exception
-                            Debug.WriteLine("Could not find occurrence by name: " & subAsy.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                            _form.Log("Could not find occurrence by name: " & subAsy.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                            curOcc = FindOccurrenceByDocumentFullName(newAsmOccs, subAsy.OriginalFullFileName)
-                        End Try
-                        ComponentReplace(curOcc, subAsy.NewFullFileName)
-
-                        'we need to update the part number in the iProperties of components that have a new component name
-                        If subAsy.OriginalName IsNot subAsy.NewName Then
-                            Dim replacedAsyDoc As AssemblyDocument = _invApp.Documents.ItemByName(subAsy.NewFullFileName)
-                            replacedAsyDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = subAsy.NewName
-                            curOcc.Name = subAsy.NewName
-                        End If
-
-                        If subAsy.SubType = "Frame" Then
-                            subAsy.ReplaceFrame(curOcc)
-                        Else
-                            subAsy.ReplaceOccurences(curOcc)
-                        End If
-                    End If
-
-                Next
-            End If
-
-        Else
-            Dim subAsyOccs As ComponentOccurrences = asyOcc.Definition.Occurrences
-            'replace the parts in sub-assemblies
-            If prtList.Count > 0 Then
-                For Each part As InvtPartObj In prtList
-                    'skip content center parts and parts that are not enabled for copy
-                    If part.SubType IsNot "Content Center Part" And part.CopyEnabled = True Then
-                        'This replaces all occurrences so no need to replace duplicates separately
-                        'Debug.WriteLine("Replacing part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
-                        '_form.LB_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName
-                        'Dim curOcc As ComponentOccurrence = subAsyOccs.ItemByName(part.OriginalComponentOccurence.Name)
-                        'curOcc.Replace(part.NewFullFileName, True)
-                        Dim curOcc As ComponentOccurrence
-                        Try
-                            curOcc = subAsyOccs.ItemByName(part.OriginalComponentOccurrence.Name)
-                        Catch ex As Exception
-                            Debug.WriteLine("Could not find occurrence by name: " & part.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                            _form.Log("Could not find occurrence by name: " & part.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                            curOcc = FindOccurrenceByDocumentFullName(subAsyOccs, part.OriginalFullFileName)
-                        End Try
-                        ComponentReplace(curOcc, part.NewFullFileName)
-
-                        'we need to update the part number in the iProperties of components that have a new component name
-                        If part.OriginalName IsNot part.NewName Then
-                            Dim replacedPartDoc As PartDocument = _invApp.Documents.ItemByName(part.NewFullFileName)
-                            replacedPartDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = part.NewName
-                            curOcc.Name = part.NewName
-                        End If
-                    End If
-                Next
-            End If
-
-            'replace sub-assemblies of sub-assemblies
-            If subAsyList.Count > 0 Then
-                For Each subAsy As AssemblyCopyObject In subAsyList
-                    'only replace sub-assemblies that are enabled for copy
-                    If subAsy.CopyEnabled = True Then
-                        'get the occurence of the current subAsy by searching for it by name using the original occurence name
-                        Dim curOcc As ComponentOccurrence
-                        Try
-                            curOcc = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
-                        Catch ex As Exception
-                            Debug.WriteLine("Could not find occurrence by name: " & subAsy.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                            _form.Log("Could not find occurrence by name: " & subAsy.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                            curOcc = FindOccurrenceByDocumentFullName(subAsyOccs, subAsy.OriginalFullFileName)
-                        End Try
-
-                        ComponentReplace(curOcc, subAsy.NewFullFileName)
-
-                        'we need to update the part number in the iProperties of components that have a new component name
-                        If subAsy.OriginalName IsNot subAsy.NewName Then
-                            Dim replacedAsyDoc As AssemblyDocument = _invApp.Documents.ItemByName(subAsy.NewFullFileName)
-                            replacedAsyDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = subAsy.NewName
-                            curOcc.Name = subAsy.NewName
-                        End If
-
-                        If subAsy.SubType = "Frame" Then
-                            subAsy.ReplaceFrame(curOcc)
-                        Else
-                            subAsy.ReplaceOccurences(curOcc)
-                        End If
-                    End If
-                Next
-            End If
+            'assign the assembly occurrence to the root occurrence
+            asyOcc = newAsmDoc.ComponentDefinition.Occurrences
         End If
+
+        Dim curAsyOccs As ComponentOccurrences = asyOcc.Definition.Occurrences
+
+        'replace the parts in sub-assemblies
+        If prtList.Count > 0 Then
+            For Each part As InvtPartObj In prtList
+                'skip content center parts and parts that are not enabled for copy
+                If part.SubType IsNot "Content Center Part" And part.CopyEnabled = True Then
+                    'This replaces all occurrences so no need to replace duplicates separately                    
+                    Dim curOcc As ComponentOccurrence
+                    Try
+                        curOcc = curAsyOccs.ItemByName(part.OriginalComponentOccurrence.Name)
+                    Catch ex As Exception
+                        _form.Log("Could Not find occurrence by name: " & part.OriginalComponentOccurrence.Name & "; trying by document full name.")
+                        curOcc = FindOccurrenceByDocumentFullName(curAsyOccs, part.OriginalFullFileName)
+                    End Try
+
+                    ComponentReplace(curOcc, part.NewFullFileName)
+
+                    'we need to update the part number in the iProperties of components that have a new component name
+                    If part.OriginalName IsNot part.NewName Then
+                        Dim replacedPartDoc As PartDocument = _invApp.Documents.ItemByName(part.NewFullFileName)
+                        replacedPartDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = part.NewName
+                        curOcc.Name = part.NewName
+                    End If
+                End If
+            Next
+        End If
+
+        'replace sub-assemblies of sub-assemblies
+        If subAsyList.Count > 0 Then
+            For Each subAsy As AssemblyCopyObject In subAsyList
+                'only replace sub-assemblies that are enabled for copy
+                If subAsy.CopyEnabled = True Then
+                    'get the occurence of the current subAsy by searching for it by name using the original occurence name
+                    Dim curOcc As ComponentOccurrence
+                    Try
+                        curOcc = curAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
+                    Catch ex As Exception
+                        _form.Log("Could not find occurrence by name: " & subAsy.OriginalComponentOccurrence.Name & "; trying by document full name.")
+                        curOcc = FindOccurrenceByDocumentFullName(curAsyOccs, subAsy.OriginalFullFileName)
+                    End Try
+
+                    ComponentReplace(curOcc, subAsy.NewFullFileName)
+
+                    'we need to update the part number in the iProperties of components that have a new component name
+                    If subAsy.OriginalName IsNot subAsy.NewName Then
+                        Dim replacedAsyDoc As AssemblyDocument = _invApp.Documents.ItemByName(subAsy.NewFullFileName)
+                        replacedAsyDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = subAsy.NewName
+                        curOcc.Name = subAsy.NewName
+                    End If
+
+                    If subAsy.SubType = "Frame" Then
+                        subAsy.ReplaceFrame(curOcc)
+                    Else
+                        subAsy.ReplaceOccurences(curOcc)
+                    End If
+                End If
+            Next
+        End If
+
+        'save the document once all replacements are done
+        _invApp.ActiveDocument.Save2()
 
     End Sub
 
@@ -715,7 +740,8 @@ Friend Class AssemblyCopyObject
     ''' </summary>
     ''' <param name="origOcc"></param>
     ''' <param name="newFileName"></param>
-    Sub ComponentReplace(ByVal origOcc As ComponentOccurrence, ByVal newFileName As String)
+    Private Sub ComponentReplace_OLD(ByVal origOcc As ComponentOccurrence, ByVal newFileName As String)
+
         Debug.WriteLine("Replacing " & origOcc.Name & " with: " & newFileName)
         _form.LB_CopyComplete.Text = "Replacing: " & origOcc.Name & " with " & newFileName
 
@@ -786,7 +812,105 @@ Friend Class AssemblyCopyObject
 
     End Sub
 
+    Private Sub ComponentReplace(ByVal curOcc As ComponentOccurrence, ByVal component As Object)
+        'only used in the case of a replacement failure
+        Dim newFileName As String
 
+        If TypeOf component Is InvtPartObj Then
+            Dim part As InvtPartObj = CType(component, InvtPartObj)
+            Try
+                'replace all instances of this occurrence
+                curOcc.Replace(part.NewFullFileName, True)
+                _form.Log("Replaced " & part.OriginalName & " with:" & part.NewFullFileName, numLines:=1)
+                Return
+            Catch pRepEx As Exception
+                _form.Log("******ERROR REPLACING PART******")
+                _form.Log("Replacing " & part.OriginalName & " with:")
+                _form.Log(part.NewFullFileName)
+                _form.Log(pRepEx.Message, numLines:=1)
+                newFileName = part.NewFullFileName
+            End Try
+
+        ElseIf TypeOf component Is AssemblyCopyObject Then
+            Dim subAsy As AssemblyCopyObject = CType(component, AssemblyCopyObject)
+            Try
+                'replace all instances of this occurrence
+                curOcc.Replace(subAsy.NewFullFileName, True)
+                _form.Log("Replaced " & subAsy.OriginalName & " with:" & subAsy.NewFullFileName, numLines:=1)
+                Return
+            Catch asyRepEx As Exception
+                _form.Log("******ERROR REPLACING SUB-ASSEMBLY******")
+                _form.Log(subAsy.OriginalName & " with:")
+                _form.Log(subAsy.NewFullFileName)
+                _form.Log(asyRepEx.Message, numLines:=1)
+                newFileName = subAsy.NewFullFileName
+            End Try
+        Else
+            _form.Log("******ERROR REPLACING COMPONENT******")
+            _form.Log("ComponentReplace called with invalid component type.")
+            _form.Log(component.GetType.ToString(), numLines:=1)
+            Return
+        End If
+
+
+        ' If initial Replace failed, attempt to open replacement document (if not already open) then retry
+
+        Try
+            If Not IsDocumentOpenByFullName(newFileName) Then
+                Try
+                    _invApp.Documents.Open(newFileName)
+                    _form.Log("Opened replacement document: " & newFileName)
+                    Debug.WriteLine("Opened replacement document: " & newFileName)
+                    System.Threading.Thread.Sleep(200)
+                Catch exOpen As Exception
+                    _form.Log("Failed to open replacement document: " & exOpen.Message)
+                    Debug.WriteLine("Failed to open replacement document: " & exOpen.Message)
+                End Try
+            Else
+                _form.Log("Replacement document already open: " & newFileName)
+                Debug.WriteLine("Replacement document already open: " & newFileName)
+            End If
+        Catch ex As Exception
+            _form.Log("Error checking/opening replacement document: " & ex.Message)
+            Debug.WriteLine("Error checking/opening replacement document: " & ex.Message)
+        End Try
+
+    End Sub
+
+    ''' <summary>
+    ''' Returns the occurrence based on the occurrence index stored in the part or sub-assembly object
+    ''' </summary>
+    ''' <param name="occurrences"></param>
+    ''' <param name="part"></param>
+    ''' <param name="subAsy"></param>
+    ''' <returns></returns>
+    Private Function GetOccurrenceByIndex(occurrences As ComponentOccurrences, component As Object) As ComponentOccurrence
+        Dim compOcc As ComponentOccurrence = Nothing
+
+        If TypeOf component Is InvtPartObj Then
+            Dim part As InvtPartObj = CType(component, InvtPartObj)
+            Try
+                compOcc = occurrences.Item(part.OccurrenceIndex)
+            Catch partEx As Exception
+                _form.Log("******ERROR*****")
+                _form.Log("Error retrieving occurrence by index for part: " & part.OriginalName & "; " & partEx.Message, numLines:=1)
+            End Try
+        ElseIf TypeOf component Is AssemblyCopyObject Then
+            Dim subAsy As AssemblyCopyObject = CType(component, AssemblyCopyObject)
+            Try
+                compOcc = occurrences.Item(subAsy.OccurrenceIndex)
+            Catch asyEx As Exception
+                _form.Log("******ERROR*****")
+                _form.Log("Error retrieving occurrence by index For Sub-assembly: " & subAsy.OriginalName & "; " & asyEx.Message, numLines:=1)
+            End Try
+        Else
+            _form.Log("******ERROR*****")
+            _form.Log("GetOccurrenceByIndex called with invalid component type.")
+            _form.Log(component.GetType.ToString(), numLines:=1)
+        End If
+
+        Return compOcc
+    End Function
 
     Private Function IsDocumentOpenByFullName(ByVal fullName As String) As Boolean
         Try
@@ -853,68 +977,44 @@ Friend Class AssemblyCopyObject
             Next
         Next
 
-        Dim subAsyOccs As ComponentOccurrences = frmOcc.Definition.Occurrences
+        Dim curAsyOccs As ComponentOccurrences = frmOcc.Definition.Occurrences
         'replace the parts in frame assembly
         If prtList.Count > 0 Then
             For Each part As InvtPartObj In prtList
-                If part.SubType IsNot "Content Center Part" Then
-                    'This replaces all occurrences so no need to replace duplicates separately"
-                    'Debug.WriteLine("Replacing Frame part: " & part.OriginalComponentOccurence.Name & " with " & part.NewFullFileName)
-                    _form.LB_CopyComplete.Text = "Replacing: " & part.OriginalComponentOccurrence.Name & " with " & part.NewFullFileName
-                    Dim curOcc As ComponentOccurrence
-                    Try
-                        curOcc = subAsyOccs.ItemByName(part.OriginalComponentOccurrence.Name)
-                    Catch ex As Exception
-                        Debug.WriteLine("Could not find occurrence by name: " & part.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                        _form.Log("Could not find occurrence by name: " & part.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                        curOcc = FindOccurrenceByDocumentFullName(subAsyOccs, part.OriginalFullFileName)
-                    End Try
-                    'curOcc.Replace(part.NewFullFileName, True)
-                    ComponentReplace(curOcc, part.NewFullFileName)
-
-                    'we need to update the part number in the iProperties of components that have a new component name
-                    If part.OriginalName IsNot part.NewName Then
-                        Dim replacedPartDoc As PartDocument = _invApp.Documents.ItemByName(part.NewFullFileName)
-                        replacedPartDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = part.NewName
-                        curOcc.Name = part.NewName
-                    End If
+                'skip content center parts and parts that are not enabled for copy
+                If part.SubType = "Content Center Part" Then
+                    _form.Log("Skipping Content Center Part: " & part.OriginalName, numLines:=1)
+                ElseIf part.CopyEnabled = False Then
+                    _form.Log("Skipping Part: " & part.OriginalName & " because copy enabled is false", numLines:=1)
                 Else
-                    Debug.WriteLine("Skipping Content Center Part: " & part.OriginalName)
+                    Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(curAsyOccs, part)
+                    ComponentReplace(curOcc, part)
+                    If part.OriginalName IsNot part.NewName Then
+                        UpdatePartNumber(curOcc, part, _invApp)
+                    End If
                 End If
-
             Next
         End If
 
         'replace frame sub-assemblies
         If subAsyList.Count > 0 Then
             For Each subAsy As AssemblyCopyObject In subAsyList
-                'get the occurence of the current subAsy by searching for it by name using the original occurence name
 
+                If subAsy.CopyEnabled Then
+                    Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(curAsyOccs, subAsy)
+                    ComponentReplace(curOcc, subAsy)
+                    If subAsy.OriginalName IsNot subAsy.NewName Then
+                        UpdatePartNumber(curOcc, subAsy, _invApp)
+                    End If
 
-                'recall this sub by getting the occurence of the component to be replaced by 
-                _form.LB_CopyComplete.Text = "Replacing: " & subAsy.OriginalName & " with " & subAsy.NewFullFileName
-                Dim curOcc As ComponentOccurrence
-                Try
-                    curOcc = subAsyOccs.ItemByName(subAsy.OriginalComponentOccurrence.Name)
-                Catch ex As Exception
-                    Debug.WriteLine("Could not find occurrence by name: " & subAsy.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                    _form.Log("Could not find occurrence by name: " & subAsy.OriginalComponentOccurrence.Name & "; trying by document full name.")
-                    curOcc = FindOccurrenceByDocumentFullName(subAsyOccs, subAsy.OriginalFullFileName)
-                End Try
-                'curOcc.Replace(subAsy.NewFullFileName, True)
-                ComponentReplace(curOcc, subAsy.NewFullFileName)
-
-                'we need to update the part number in the iProperties of components that have a new component name
-                If subAsy.OriginalName IsNot subAsy.NewName Then
-                    Dim replacedAsyDoc As AssemblyDocument = _invApp.Documents.ItemByName(subAsy.NewFullFileName)
-                    replacedAsyDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = subAsy.NewName
-                    curOcc.Name = subAsy.NewName
+                    If subAsy.SubType = "Frame" Then
+                        subAsy.ReplaceFrame(curOcc)
+                    Else
+                        subAsy.ReplaceOccurrencesByIndex(curOcc)
+                    End If
+                Else
+                    _form.Log("Not replacing sub-assembly " & subAsy.OriginalName & " because copy enabled is false")
                 End If
-
-                If subAsy.SubType = "Frame" Then
-                    subAsy.ReplaceFrame(curOcc)
-                End If
-                subAsy.ReplaceOccurences(curOcc)
             Next
         End If
 
@@ -1117,6 +1217,15 @@ Friend Class AssemblyCopyObject
         End Get
         Set(value As Boolean)
             _copyEnabled = value
+        End Set
+    End Property
+
+    Property OccurrenceIndex As Integer
+        Get
+            Return _occurrenceIndex
+        End Get
+        Set(value As Integer)
+            _occurrenceIndex = value
         End Set
     End Property
 
