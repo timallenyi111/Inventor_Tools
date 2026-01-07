@@ -36,6 +36,8 @@ Friend Class AssemblyCopyToolForm
     Private Sub AssemblyCopyFormLoad(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error Resume Next
 
+        Dim sw As Stopwatch = Stopwatch.StartNew()
+
         'get an active session of Inventor
         _invApp = Win32.GetActiveObject("Inventor.Application")
         If Err.Number Then
@@ -97,6 +99,9 @@ Friend Class AssemblyCopyToolForm
 
         ' setup tree view
         TV_nComponent.Nodes.Add(rootAssemblyObject.NewTreeNode)
+
+        sw.Stop()
+        Debug.WriteLine("Form Load Time: " & sw.ElapsedMilliseconds & " ms")
     End Sub
 
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)

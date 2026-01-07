@@ -26,6 +26,7 @@ Friend Class AssemblyCopyObject
     Private _subType As String
     Private hltSet As HighlightSet
     Private ReadOnly duplicateOccurrenceList As List(Of ComponentOccurrence)
+    Private ReadOnly _duplicateOccIndexList As List(Of Integer)
     Private _copyEnabled As Boolean = True
     Private _occurrenceIndex As Integer
 
@@ -37,6 +38,7 @@ Friend Class AssemblyCopyObject
         prtList = New List(Of InvtPartObj)
         subAsyList = New List(Of AssemblyCopyObject)
         duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
+        _duplicateOccIndexList = New List(Of Integer)
     End Sub
 
 #Region "setup functions"
@@ -74,7 +76,7 @@ Friend Class AssemblyCopyObject
 
             If curOcc.DefinitionDocumentType = DocumentTypeEnum.kPartDocumentObject Then
                 'ReadOccurrenceDefinitionAttributes(curOcc)
-                If CheckForDuplicateDocument(curOcc) = False Then
+                If CheckForDuplicateDocument(curOcc, curOccIndex) = False Then
                     ' perform part setup
                     Dim curPartObject As New InvtPartObj
                     curPartObject.InitialSetup(curOcc, nRootDirectory, nTreeNode, _contentCenterPath)
@@ -85,7 +87,7 @@ Friend Class AssemblyCopyObject
                 End If
 
             ElseIf curOcc.DefinitionDocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
-                If CheckForDuplicateDocument(curOcc) = False Then
+                If CheckForDuplicateDocument(curOcc, curOccIndex) = False Then
                     ' perform sub assembly setup
 
                     Dim curAsmObject As New AssemblyCopyObject(_form, _invApp)
@@ -117,7 +119,8 @@ Friend Class AssemblyCopyObject
         Next
 
         'these node tags are used for highlighting the components in the assembly treeview
-        AssignNodeTags()
+        'AssignNodeTags()
+        AssignNodeTagsByIndex()
     End Sub
 
     ''' <summary>
@@ -192,7 +195,7 @@ Friend Class AssemblyCopyObject
     ''' </summary>
     ''' <param name="doc"></param>
     ''' <returns></returns>
-    Function CheckForDuplicateDocument(ByRef occ As Inventor.ComponentOccurrence) As Boolean
+    Function CheckForDuplicateDocument(ByRef occ As Inventor.ComponentOccurrence, occIndex As Integer) As Boolean
         Dim doc As Document = occ.Definition.Document
         Dim isDuplicate As Boolean = False
         If doc.DocumentType = DocumentTypeEnum.kPartDocumentObject Then
@@ -200,7 +203,7 @@ Friend Class AssemblyCopyObject
             For Each part As InvtPartObj In prtList
                 If part.OriginalFullFileName = doc.FullFileName Then
                     isDuplicate = True
-                    part.AddDuplicateOccurrence(occ)
+                    part.AddDuplicateOccurrence(occ, occIndex)
                     'Debug.WriteLine("Found Duplicate Part: " & part.OriginalName)
                     Exit For
                 End If
@@ -210,7 +213,7 @@ Friend Class AssemblyCopyObject
             For Each asy As AssemblyCopyObject In subAsyList
                 If asy.OriginalFullFileName = doc.FullFileName Then
                     isDuplicate = True
-                    asy.AddDuplicateOccurrence(occ)
+                    asy.AddDuplicateOccurrence(occ, occIndex)
                     Exit For
                 End If
             Next
@@ -219,8 +222,9 @@ Friend Class AssemblyCopyObject
         Return isDuplicate
     End Function
 
-    Sub AddDuplicateOccurrence(ByRef dupOcc As Inventor.ComponentOccurrence)
+    Sub AddDuplicateOccurrence(ByRef dupOcc As Inventor.ComponentOccurrence, occIndex As Integer)
         duplicateOccurrenceList.Add(dupOcc)
+        _duplicateOccIndexList.Add(occIndex)
     End Sub
 
     Function CheckIfOccurenceIsFrame(ByRef compOcc As ComponentOccurrence) As Boolean
@@ -338,129 +342,85 @@ Friend Class AssemblyCopyObject
         nTreeNode.Text = nAsyName
     End Sub
 
-    Sub AssignNodeTags()
-        For Each part As InvtPartObj In prtList
-            'parts in the root assembly
-            Dim partNode As System.Windows.Forms.TreeNode = part.NewTreeNode
-            'in the root assembly the component occurrence is the only thing you need for highlighting
-            Dim occList As New List(Of Inventor.ComponentOccurrence)
-            Dim occNames As New List(Of String) From {
-                part.OriginalComponentOccurrence.Name
-            }
-            'Debug.WriteLine("Adding original occurrence name to search list: " & part.OriginalComponentOccurence.Name)
-            If part.DuplicateOccurrences.Count > 0 Then
-                For Each dupOcc As Inventor.ComponentOccurrence In part.DuplicateOccurrences
-                    occNames.Add(dupOcc.Name)
-                    'Debug.WriteLine("Adding duplicate occurrence name to search list: " & dupOcc.Name)
-                Next
-            End If
+    Sub AssignNodeTagsByIndex(Optional occurrences As Inventor.ComponentOccurrences = Nothing)
+        'handle root assembly
+        If occurrences Is Nothing Then
+            'this is the root assembly
+            occurrences = oAsmDoc.ComponentDefinition.Occurrences
 
-            For Each occName As String In occNames
-                For Each occ As Inventor.ComponentOccurrence In oAsmDoc.ComponentDefinition.Occurrences
-                    If occ.Name = occName Then
-                        occList.Add(occ)
-                        'Debug.WriteLine("Found matching occurrence proxy: " & occ.Name)
-                        Exit For
-                    End If
+            For Each part As InvtPartObj In prtList
+                'parts in the root assembly
+                Dim partNode As System.Windows.Forms.TreeNode = part.NewTreeNode
+                'in the root assembly the component occurrence is the only thing you need for highlighting
+                'Dim occ As Inventor.ComponentOccurrence = oAsmDoc.ComponentDefinition.Occurrences.Item(part.OccurrenceIndex)
+                Dim occList As New List(Of Inventor.ComponentOccurrence)
+                occList.Add(part.OriginalComponentOccurrence)
+                For Each dupOcc As Inventor.ComponentOccurrence In part.DuplicateOccurrences
+                    occList.Add(dupOcc)
                 Next
+
+                partNode.Tag = occList
             Next
 
-            partNode.Tag = occList
-        Next
+            For Each subAsy As AssemblyCopyObject In subAsyList
+                Dim asyNode As System.Windows.Forms.TreeNode = subAsy.NewTreeNode
+                Dim occList As New List(Of Inventor.ComponentOccurrence)
+                'Dim occProxy As Inventor.ComponentOccurrenceProxy = occurrences.Item(subAsy.OccurrenceIndex)
 
-        For Each subAsy As AssemblyCopyObject In subAsyList
-            'sub-assemblies in the root assembly
-            Dim subAsmNode As System.Windows.Forms.TreeNode = subAsy.NewTreeNode
-            'assemblies in the root assembly need a list of occurrences for highlighting
-            Dim occList As New List(Of Inventor.ComponentOccurrence)
-            Dim occNames As New List(Of String) From {
-                subAsy.OriginalComponentOccurrence.Name
-            }
-            'Debug.WriteLine("Adding original occurrence name to search list: " & subAsy.OriginalComponentOccurrence.Name)
-            If subAsy.DuplicateOccurrences.Count > 0 Then
+                occList.Add(subAsy.OriginalComponentOccurrence)
                 For Each dupOcc As Inventor.ComponentOccurrence In subAsy.DuplicateOccurrences
-                    occNames.Add(dupOcc.Name)
-                    'Debug.WriteLine("Adding duplicate occurrence name to search list: " & dupOcc.Name)
+                    occList.Add(dupOcc)
+                Next
+
+                asyNode.Tag = occList
+
+                'process components in the sub-assembly
+                subAsy.AssignNodeTagsByIndex(subAsy.OriginalComponentOccurrence.SubOccurrences)
+            Next
+
+        Else
+            If prtList.Count > 0 Then
+                For Each part As InvtPartObj In prtList
+                    'parts in the root assembly
+                    Dim partNode As System.Windows.Forms.TreeNode = part.NewTreeNode
+                    'in the root assembly the component occurrence is the only thing you need for highlighting
+                    'Dim occ As Inventor.ComponentOccurrence = oAsmDoc.ComponentDefinition.Occurrences.Item(part.OccurrenceIndex)
+                    Dim occProxyList As New List(Of Inventor.ComponentOccurrenceProxy)
+                    Dim occProxy As Inventor.ComponentOccurrenceProxy = occurrences.Item(part.OccurrenceIndex)
+                    occProxyList.Add(occProxy)
+                    For Each occIndex As Integer In part.DuplicateOccurrenceIndexList
+                        Dim dupOccProxy As Inventor.ComponentOccurrenceProxy = occurrences.Item(occIndex)
+                        occProxyList.Add(dupOccProxy)
+                    Next
+
+                    partNode.Tag = occProxyList
                 Next
             End If
 
-            For Each occName As String In occNames
-                For Each occ As Inventor.ComponentOccurrence In oAsmDoc.ComponentDefinition.Occurrences
-                    If occ.Name = occName Then
-                        occList.Add(occ)
-                        'Debug.WriteLine("Found matching occurrence proxy: " & occ.Name)
-                        'now process the components in the subassembly
-                        SubAssemblyNodeTagSetup(occ.SubOccurrences, subAsy)
-                        Exit For
-                    End If
-                Next
-            Next
-            subAsmNode.Tag = occList
-        Next
-    End Sub
+            If subAsyList.Count > 0 Then
+                For Each subAsy As AssemblyCopyObject In subAsyList
+                    Dim asyNode As System.Windows.Forms.TreeNode = subAsy.NewTreeNode
+                    Dim occProxyList As New List(Of Inventor.ComponentOccurrenceProxy)
+                    Dim occProxy As Inventor.ComponentOccurrenceProxy = occurrences.Item(subAsy.OccurrenceIndex)
+                    occProxyList.Add(occProxy)
+                    For Each occIndex As Integer In subAsy.DuplicateOccurrenceIndexList
+                        Dim dupOccProxy As Inventor.ComponentOccurrenceProxy = occurrences.Item(occIndex)
+                        occProxyList.Add(dupOccProxy)
+                    Next
 
-    Private Sub SubAssemblyNodeTagSetup(ByRef occurrences As Inventor.ComponentOccurrences, ByVal subAsy As AssemblyCopyObject)
+                    asyNode.Tag = occProxyList
 
-        For Each part As InvtPartObj In subAsy.prtList
-            'setup part name list
-            Dim occNames As New List(Of String) From {
-                part.OriginalComponentOccurrence.Name
-            }
-            If part.DuplicateOccurrences.Count > 0 Then
-                For Each dupOcc As Inventor.ComponentOccurrence In part.DuplicateOccurrences
-                    occNames.Add(dupOcc.Name)
+                    'process components in the sub-assembly
+                    subAsy.AssignNodeTagsByIndex(occProxy.SubOccurrences)
                 Next
             End If
+        End If
 
-            Dim index As Integer = 1
-            Dim occProxyList As New List(Of Inventor.ComponentOccurrenceProxy)
-            For Each occName As String In occNames
-                While index <= occurrences.Count
-                    Dim occ As Inventor.ComponentOccurrenceProxy = occurrences.Item(index)
-                    If occ.Name = occName Then
-                        'Debug.WriteLine("Found matching occurrence proxy: " & occ.Name)
-                        occProxyList.Add(occ)
-                        Exit While
-                    End If
-                    index += 1
-                End While
-            Next
-            part.NewTreeNode.Tag = occProxyList
-        Next
-
-        For Each asy As AssemblyCopyObject In subAsy.subAsyList
-            Dim occNames As New List(Of String) From {
-                asy.OriginalComponentOccurrence.Name
-            }
-            If asy.DuplicateOccurrences.Count > 0 Then
-                For Each dupOcc As Inventor.ComponentOccurrence In asy.DuplicateOccurrences
-                    occNames.Add(dupOcc.Name)
-                Next
-            End If
-
-            Dim index As Integer = 1
-            Dim occProxyList As New List(Of Inventor.ComponentOccurrenceProxy)
-            For Each occName As String In occNames
-                While index <= occurrences.Count
-                    Dim occ As Inventor.ComponentOccurrenceProxy = occurrences.Item(index)
-                    If occ.Name = occName Then
-                        Debug.WriteLine("Found matching occurrence proxy: " & occ.Name)
-                        occProxyList.Add(occ)
-                        'Process components in the sub-assembly
-                        'This will work for duplicate components because the name "component:1" will be the same for all duplicates
-                        SubAssemblyNodeTagSetup(occ.SubOccurrences, asy)
-                        Exit While
-                    End If
-                    index += 1
-                End While
-            Next
-
-            asy.NewTreeNode.Tag = occProxyList
-
-        Next
 
 
     End Sub
+
+
 
 #End Region
 
@@ -504,7 +464,6 @@ Friend Class AssemblyCopyObject
         End If
 
     End Sub
-
 
     Sub CreateNewFiles(Optional dryrun As Boolean = False)
         'copy the root assembly
@@ -1025,6 +984,12 @@ Friend Class AssemblyCopyObject
         Set(value As Integer)
             _occurrenceIndex = value
         End Set
+    End Property
+
+    ReadOnly Property DuplicateOccurrenceIndexList As List(Of Integer)
+        Get
+            Return _duplicateOccIndexList
+        End Get
     End Property
 
 #End Region

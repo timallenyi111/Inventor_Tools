@@ -13,6 +13,7 @@
     Private oTreeNode As TreeNode
     Private nTreeNode As TreeNode
     Private duplicateOccurrenceList As List(Of Inventor.ComponentOccurrence)
+    Private _duplicateOccurrenceIndexList As List(Of Integer)
     Private _subType As String
     Private _enableCopy As Boolean = True
     Private _occurrenceIndex As Integer
@@ -116,6 +117,15 @@
         End Set
     End Property
 
+    Property DuplicateOccurrenceIndexList As List(Of Integer)
+        Get
+            Return _duplicateOccurrenceIndexList
+        End Get
+        Set(value As List(Of Integer))
+            _duplicateOccurrenceIndexList = value
+        End Set
+    End Property
+
 #End Region
 
     Sub InitialSetup(ByRef PartOcc As Inventor.ComponentOccurrence, ByRef rootDirectory As String,
@@ -131,11 +141,13 @@
             nTreeNode = ParentAssemblyNewNode.Nodes.Add(oPrtName)
             Debug.WriteLine("Content Center Part Found: " & oPrtName)
             duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
+            _duplicateOccurrenceIndexList = New List(Of Integer)
         Else
             nPrtName = oPrtName ' For now.... we aren't changing the new names by default
             nFilePath = rootDirectory
             nTreeNode = ParentAssemblyNewNode.Nodes.Add(nPrtName)
             duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
+            _duplicateOccurrenceIndexList = New List(Of Integer)
         End If
 
 
@@ -166,7 +178,8 @@
 
     End Sub
 
-    Sub AddDuplicateOccurrence(ByRef dupOcc As Inventor.ComponentOccurrence)
+    Sub AddDuplicateOccurrence(ByRef dupOcc As Inventor.ComponentOccurrence, occIndex As Integer)
         duplicateOccurrenceList.Add(dupOcc)
+        _duplicateOccurrenceIndexList.Add(occIndex)
     End Sub
 End Class

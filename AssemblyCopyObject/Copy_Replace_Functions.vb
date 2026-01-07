@@ -30,4 +30,6 @@ Module Copy_Replace_Functions
             Log("Component is neither InvtPartObj nor AssemblyCopyObject. No Part Number update performed.", numLines:=1)
         End If
     End Sub
+
+
 End Module
