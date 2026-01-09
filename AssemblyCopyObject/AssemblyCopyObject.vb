@@ -278,6 +278,7 @@ Friend Class AssemblyCopyObject
 
         Return isBoltedConnection
     End Function
+
     Sub GenerateSetupLog(Optional ByRef isRoot As Boolean = True)
         If isRoot Then
             _form.Log("", numLines:=4)
@@ -603,6 +604,17 @@ Friend Class AssemblyCopyObject
                 _form.Log(part.NewFullFileName)
                 _form.Log(pRepEx.Message, numLines:=1)
                 newFileName = part.NewFullFileName
+                System.Threading.Thread.Sleep(1000)
+                _form.Log("Trying again after a 1 second delay...")
+                Try
+                    curOcc.Replace(part.NewFullFileName, True)
+                    _form.Log("SUCCESSFULLY REPLACED ON SECOND ATTEMPT")
+                    _form.Log("Replaced " & part.OriginalName & " with:" & part.NewFullFileName, numLines:=1)
+                Catch ex As Exception
+                    _form.Log("Second attempt failed.")
+                End Try
+
+                newFileName = part.NewFullFileName
             End Try
 
         ElseIf TypeOf component Is AssemblyCopyObject Then
@@ -618,6 +630,15 @@ Friend Class AssemblyCopyObject
                 _form.Log(subAsy.NewFullFileName)
                 _form.Log(asyRepEx.Message, numLines:=1)
                 newFileName = subAsy.NewFullFileName
+                System.Threading.Thread.Sleep(1000)
+                _form.Log("Trying again after a 1 second delay...")
+                Try
+                    curOcc.Replace(subAsy.NewFullFileName, True)
+                    _form.Log("SUCCESSFULLY REPLACED ON SECOND ATTEMPT")
+                    _form.Log("Replaced " & subAsy.OriginalName & " with:" & subAsy.NewFullFileName, numLines:=1)
+                Catch ex As Exception
+                    _form.Log("Second attempt failed.")
+                End Try
             End Try
         Else
             _form.Log("******ERROR REPLACING COMPONENT******")
