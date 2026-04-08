@@ -6,6 +6,10 @@ Module ButtonClicks
         frm.LB_CopyComplete.Text = "Starting Process..."
         rootAssemblyObject.UpdateNewProperties()
         rootAssemblyObject.CreateNewFiles(dryrun:=False)
+
+        'try closing the original assembly without saving to see if this fixes the platform replacement issue.
+        invApp.ActiveDocument.Close(False)
+
         rootAssemblyObject.ReplaceOccurrencesByIndex()
         frm.LB_CopyComplete.Text = "Assembly Copy Complete!"
         invApp.ActiveDocument.Save2()

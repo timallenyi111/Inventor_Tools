@@ -131,9 +131,27 @@
     Sub InitialSetup(ByRef PartOcc As Inventor.ComponentOccurrence, ByRef rootDirectory As String,
                      ByRef ParentAssemblyNewNode As TreeNode, ByRef contentCenterPath As String)
 
-        oPartOcc = PartOcc
-        oPrtDoc = PartOcc.Definition.Document
-        oFullFileName = oPrtDoc.FullFileName
+        Try
+            oPrtDoc = PartOcc.Definition.Document
+            oFullFileName = oPrtDoc.FullFileName
+        Catch comEx As System.Runtime.InteropServices.COMException
+            Debug.WriteLine("Could not get Definition.Document for occurrence: " & PartOcc.Name & " ⇒ " & comEx.Message)
+            ' Try to get a referenced file path as a fallback
+            Try
+                Dim rfd = PartOcc.ReferencedFileDescriptor
+                If rfd IsNot Nothing AndAlso rfd.ReferencedFile IsNot Nothing Then
+                    oFullFileName = rfd.ReferencedFile.FullFileName
+                Else
+                    ' Last-resort: mark as content-center or missing; use occurrence name so logic continues
+                    oFullFileName = PartOcc.Name
+                    _subType = "Unknown/ContentCenterOrMissing"
+                End If
+            Catch ex As Exception
+                Debug.WriteLine("Fallback failed: " & ex.Message)
+                oFullFileName = PartOcc.Name
+                _subType = "Unknown/ContentCenterOrMissing"
+            End Try
+        End Try
         oPrtName = GetPartName(oFullFileName)
         'check if this is a content center part
         If oFullFileName.ToLower.StartsWith(contentCenterPath.ToLower) Then

@@ -20,10 +20,15 @@ att name: Type
 att value: MasterFrameOcc
 
 ### Issues
+- [] There seems to be an issue with suppressed parts. 
+- [] When trying to add duplicate parts to the highlight set, some items aren't added.
 #### Frame replacement doesn't always work  
 - ~~Current fix is replacing parts before assemblies, I don't know if that order is the actual issue or if it is
 a timing issue with onedrive.~~
 - Issue may be happening when if another assembly that contains the assembly being copied is open.  
 	- Potential fix would be to check all open assemblies for the parts/assemblies being replaced and close them first.
+- Another potential cause is when the frame is in a sub-assembly, not just a frame in the root assembly
+	- To fix this we probably need to replace the skeleton frame id before saving the frame
+	- Then open the parent assembly to the frame and replace it. 
 
 

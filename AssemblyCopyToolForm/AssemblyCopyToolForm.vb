@@ -383,7 +383,7 @@ Friend Class AssemblyCopyToolForm
             ElseIf TV_nComponent.SelectedNode.Parent Is rootAssemblyObject.NewTreeNode Then
                 'this is a component of the root assembly
                 For Each occ As ComponentOccurrence In TV_nComponent.SelectedNode.Tag
-                    highlightSet.AddItem(occ)
+                    If occ IsNot Nothing Then highlightSet.AddItem(occ)
                 Next
             Else
                 For Each occProx As ComponentOccurrenceProxy In TV_nComponent.SelectedNode.Tag

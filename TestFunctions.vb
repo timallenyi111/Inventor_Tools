@@ -79,6 +79,17 @@ Module TestFunctions
 
     End Sub
 
+    Sub WriteObjectSubType(ByRef component As Object, form As AssemblyCopyToolForm)
+        If TypeOf component Is InvtPartObj Then
+            Dim partObj As InvtPartObj = component
+            form.LB_TestLabel.Text = "Part Object SubType: " & partObj.SubType
+
+        ElseIf TypeOf component Is AssemblyCopyObject Then
+            Dim asmCopyObj As AssemblyCopyObject = component
+            form.LB_TestLabel.Text = "Assembly Object SubType: " & asmCopyObj.SubType
+        End If
+    End Sub
+
     'Sub ReadOccurrenceDefinitionAttributes(ByRef _invApp As Inventor.Application)
     '    Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
     '    Dim selectSet As Inventor.SelectSet = activeDoc.SelectSet

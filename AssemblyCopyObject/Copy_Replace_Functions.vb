@@ -15,13 +15,15 @@ Module Copy_Replace_Functions
     Public Sub UpdatePartNumber(curOcc As ComponentOccurrence, component As Object, _invApp As Inventor.Application)
         If TypeOf component Is InvtPartObj Then
             Dim part As InvtPartObj = CType(component, InvtPartObj)
-            Dim replacedPartDoc As PartDocument = _invApp.Documents.ItemByName(part.NewFullFileName)
+            'Dim replacedPartDoc As PartDocument = _invApp.Documents.ItemByName(part.NewFullFileName)
+            Dim replacedPartDoc As PartDocument = curOcc.Definition.Document
             replacedPartDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = part.NewName
             curOcc.Name = part.NewName
             Log("Updated Part Number for Part: " & part.NewName, numLines:=1)
         ElseIf TypeOf component Is AssemblyCopyObject Then
             Dim subAsy As AssemblyCopyObject = CType(component, AssemblyCopyObject)
-            Dim replacedAsyDoc As AssemblyDocument = _invApp.Documents.ItemByName(subAsy.NewFullFileName)
+            Dim replacedAsyDoc As AssemblyDocument = curOcc.Definition.Document
+            'Dim replacedAsyDoc As AssemblyDocument = _invApp.Documents.ite(subAsy.NewFullFileName)
             replacedAsyDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = subAsy.NewName
             curOcc.Name = subAsy.NewName
             Log("Updated Part Number for Assembly: " & subAsy.NewName, numLines:=1)

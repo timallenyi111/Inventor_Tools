@@ -29,6 +29,7 @@ Friend Class AssemblyCopyObject
     Private ReadOnly _duplicateOccIndexList As List(Of Integer)
     Private _copyEnabled As Boolean = True
     Private _occurrenceIndex As Integer
+    Private _containsFrame As Boolean = False
 
     Public Sub New(form As AssemblyCopyToolForm, invApp As Inventor.Application)
         _form = form
@@ -92,11 +93,14 @@ Friend Class AssemblyCopyObject
 
                     Dim curAsmObject As New AssemblyCopyObject(_form, _invApp)
                     If CheckIfOccurenceIsFrame(curOcc) Then
+                        'set the contains frame flag to true so that when replacing the components we will open this assembly
+                        _containsFrame = True
                         ' this is a frame assembly so we need to set the frame directory
                         Dim frameRootDirectory As String = nRootDirectory + nTreeNode.Text + "\Frame\"
                         curAsmObject.InitialSetup(curOcc, frameRootDirectory, nTreeNode)
                         curAsmObject.SubType = "Frame"
                         curAsmObject.OccurrenceIndex = curOccIndex
+                        _form.Log(curOcc._DisplayName & " was identified as a frame assembly")
                     ElseIf CheckIfOccurrenceIsBoltedConnection(curOcc) Then
                         Dim boltedConnectionDirectory As String = nRootDirectory + nTreeNode.Text + "\Design Accelerator\"
                         curAsmObject.InitialSetup(curOcc, boltedConnectionDirectory, nTreeNode)
@@ -196,28 +200,33 @@ Friend Class AssemblyCopyObject
     ''' <param name="doc"></param>
     ''' <returns></returns>
     Function CheckForDuplicateDocument(ByRef occ As Inventor.ComponentOccurrence, occIndex As Integer) As Boolean
-        Dim doc As Document = occ.Definition.Document
+        Dim doc As Document
         Dim isDuplicate As Boolean = False
-        If doc.DocumentType = DocumentTypeEnum.kPartDocumentObject Then
-            ' this is a part so check the parts list
-            For Each part As InvtPartObj In prtList
-                If part.OriginalFullFileName = doc.FullFileName Then
-                    isDuplicate = True
-                    part.AddDuplicateOccurrence(occ, occIndex)
-                    'Debug.WriteLine("Found Duplicate Part: " & part.OriginalName)
-                    Exit For
-                End If
-            Next
-        ElseIf doc.DocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
-            ' this is an assembly so check the sub assembly list
-            For Each asy As AssemblyCopyObject In subAsyList
-                If asy.OriginalFullFileName = doc.FullFileName Then
-                    isDuplicate = True
-                    asy.AddDuplicateOccurrence(occ, occIndex)
-                    Exit For
-                End If
-            Next
-        End If
+        Try
+            doc = occ.Definition.Document
+            If doc.DocumentType = DocumentTypeEnum.kPartDocumentObject Then
+                ' this is a part so check the parts list
+                For Each part As InvtPartObj In prtList
+                    If part.OriginalFullFileName = doc.FullFileName Then
+                        isDuplicate = True
+                        part.AddDuplicateOccurrence(occ, occIndex)
+                        'Debug.WriteLine("Found Duplicate Part: " & part.OriginalName)
+                        Exit For
+                    End If
+                Next
+            ElseIf doc.DocumentType = DocumentTypeEnum.kAssemblyDocumentObject Then
+                ' this is an assembly so check the sub assembly list
+                For Each asy As AssemblyCopyObject In subAsyList
+                    If asy.OriginalFullFileName = doc.FullFileName Then
+                        isDuplicate = True
+                        asy.AddDuplicateOccurrence(occ, occIndex)
+                        Exit For
+                    End If
+                Next
+            End If
+        Catch
+            Console.WriteLine("Not able to perform duplicate check for", occ.Name)
+        End Try
 
         Return isDuplicate
     End Function
@@ -472,7 +481,11 @@ Friend Class AssemblyCopyObject
             CopyFile_DRYRUN(oFullFileName, nFullFileName)
         Else
             If CopyEnabled Then
-                CopyFile(oFullFileName, nFullFileName)
+                If ContainsFrame Then
+                    _form.Log("This assembly contains a frame sub-assembly. When copying this assembly, the frame sub-assembly will be copied and replaced first before copying and replacing the rest of the components in this assembly because of the potential complexity of the frame assembly and the fact that it is often generated from iLogic with unique file naming schemes for the components within it. After the frame sub-assembly has been copied and replaced, the rest of the components in this assembly will be copied and replaced as normal.", numLines:=2)
+                Else
+                    CopyFile(oFullFileName, nFullFileName)
+                End If
             Else
                 _form.Log("Skipping Assembly: " & oAsyName & " because copy enabled is false")
             End If
@@ -496,8 +509,125 @@ Friend Class AssemblyCopyObject
         Next
 
         For Each subAsy As AssemblyCopyObject In subAsyList
-            subAsy.CreateNewFiles(dryrun)
+            If subAsy.SubType = "Frame" Then
+                '_form.Log("Frame Assembly: " & subAsy.OriginalName)
+                '_form.Log("New Frame Name: " & subAsy.NewName, numTabs:=1)
+                '_form.Log("Frame assemblies will be copied and replaced but not processed for part/sub-assembly copying or replacement within them because of the potential complexity of the frame assemblies and the fact that they are often generated from iLogic with unique file naming schemes for the components within them.")
+                CopyFrameFile(subAsy)
+                subAsy.CreateNewFiles(dryrun)
+            Else
+                subAsy.CreateNewFiles(dryrun)
+            End If
+
         Next
+    End Sub
+
+    Private Sub CopyFrameFile(frame As AssemblyCopyObject)
+        'used to make sure we close the opened sub assembly before moving on.
+        Dim openedNewAssembly As Boolean = False
+        Dim nameValueMap As Inventor.NameValueMap = _invApp.TransientObjects.CreateNameValueMap
+        nameValueMap.Add("SkipAllUnresolvedFiles", True)
+        Dim oParentAsmDoc As AssemblyDocument = Nothing
+        If _invApp.ActiveDocument.FullFileName = Me.OriginalFullFileName Then
+            'the frame is in the root assembly so we don't need to open anything.
+        Else
+            ' we need to open the new assembly
+            ' at this point the frame assembly is still a sub assembly of the parent
+            oParentAsmDoc = _invApp.Documents.OpenWithOptions(oFullFileName, nameValueMap, True)
+
+            openedNewAssembly = True
+        End If
+
+        Dim frmOcc As ComponentOccurrence = GetOccurrenceByIndex(OriginalAsmDocument.ComponentDefinition.Occurrences, frame)
+
+        'the original frame attribute value (we will replace this once the copy has been completed)
+        Dim oAtriVal As String = Nothing
+
+        Dim nskelID As String = Nothing
+        Dim oskelID As String = Nothing
+        'try changing the skeleton ID and path ID before changing
+        'replace the skelton id in the frame assembly attributes
+        'change the frame attributes in the original file
+        For Each attSet As AttributeSet In frmOcc.Definition.AttributeSets
+            For Each atri As Attribute In attSet
+                If atri.Name = "Frame.Skeletons" Then
+                    oAtriVal = atri.Value
+                    Dim skelIdStart As Integer = GetSkelIdStartInt(oAtriVal)
+                    Dim skelIdEnd As Integer = GetSkelIdEndInt(oAtriVal, skelIdStart)
+                    Dim skelPathStart As Integer = GetPathIdStartInt(oAtriVal)
+                    Dim skelPathEnd As Integer = GetPathIdEndInt(oAtriVal, skelPathStart)
+
+                    oskelID = oAtriVal.Substring(skelIdStart, skelIdEnd - skelIdStart)
+                    Dim oSkelPath As String = oAtriVal.Substring(skelPathStart, skelPathEnd - skelPathStart)
+
+                    nskelID = GenerateNewID(oSkelId)
+                    Dim nskelPath As String = GenerateNewID(oSkelPath)
+
+
+                    'replace the skeleton ID
+                    Dim nAtriVal As String = oAtriVal.Substring(0, skelIdStart) & nskelID &
+                        oAtriVal.Substring(skelIdEnd)
+
+                    'nAtriVal = nAtriVal.Substring(0, skelPathStart) & nskelPath &
+                    'nAtriVal.Substring(skelPathEnd)
+
+                    atri.Value = nAtriVal
+                End If
+            Next
+        Next
+
+        Dim skelOcc As ComponentOccurrence = GetSkeletonOcc(frmOcc.Definition.Occurrences)
+
+        For Each attSet As AttributeSet In skelOcc.AttributeSets
+            For Each att As Attribute In attSet
+                ' replace the old skeleton id with the new
+                If att.Name = "ID" Then
+                    att.Value = nskelID
+                End If
+            Next
+        Next
+
+        'save the new file
+        _invApp.ActiveDocument.SaveAs(nFullFileName, True)
+
+        'close the saved copy
+        _invApp.ActiveDocument.Close()
+
+        'reopen the original file        
+        oParentAsmDoc = _invApp.Documents.OpenWithOptions(oFullFileName, nameValueMap, True)
+
+        'reset the frame occurence to the occurrence in the original assembly
+        frmOcc = GetOccurrenceByIndex(OriginalAsmDocument.ComponentDefinition.Occurrences, frame)
+
+
+        'change the skeleton ID and path back to the original
+        For Each attSet As AttributeSet In frmOcc.Definition.AttributeSets
+            For Each atri As Attribute In attSet
+                If atri.Name = "Frame.Skeletons" Then
+                    atri.Value = oAtriVal
+                End If
+            Next
+        Next
+
+
+        skelOcc = GetSkeletonOcc(frmOcc.Definition.Occurrences)
+        'set the original skeleton occurence id back to the original skeleton id
+        For Each attSet As AttributeSet In skelOcc.AttributeSets
+            For Each att As Attribute In attSet
+                ' replace the old skeleton id with the new
+                If att.Name = "ID" Then
+                    att.Value = oskelID
+                End If
+            Next
+        Next
+
+        'resave the original assembly with the original skeleton ID and path
+        _invApp.ActiveDocument.Save2()
+
+        If openedNewAssembly Then
+            'close the new assembly 
+            _invApp.ActiveDocument.Close(True)
+        End If
 
     End Sub
 
@@ -543,22 +673,72 @@ Friend Class AssemblyCopyObject
 
         If subAsyList.Count > 0 Then
             For Each subAsy As AssemblyCopyObject In subAsyList
-
                 If subAsy.CopyEnabled Then
+
                     Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(curAsyOccs, subAsy)
 
-                    ComponentReplace(curOcc, subAsy)
+                    If subAsy.SubType = "Frame" Then
+                        'If nTreeNode.Parent IsNot Nothing Then
+                        '    'this is not the root directory so we need to open this document
+                        '    'we need to open the parent document of the frame assembly occurrence in order to replace the frame assembly occurrence
+                        '    Dim nameValueMap As Inventor.NameValueMap = _invApp.TransientObjects.CreateNameValueMap
+                        '    nameValueMap.Add("SkipAllUnresolvedFiles", True)
+
+                        '    ' we need to open the new assembly
+                        '    ' at this point the frame assembly is still a sub assembly of the parent
+                        '    Dim parentAsmDoc As AssemblyDocument = _invApp.Documents.OpenWithOptions(nFullFileName, nameValueMap, True)
+
+                        '    'we have to recapture the component occurrence because we opened a new file
+                        '    Dim currentDoc As AssemblyDocument = _invApp.ActiveDocument
+                        '    curOcc = GetOccurrenceByIndex(currentDoc.ComponentDefinition.Occurrences, subAsy)
+                        '    Debug.WriteLine("Replacing frame assembly occurrence: " & curOcc.Name)
+                        '    ComponentReplace(curOcc, subAsy)
+                        '    'subAsy.ReplaceFrame(curOcc, subAsy)
+                        '    subAsy.ReplaceOccurrencesByIndex(curOcc)
+
+                        'Else
+                        '    ComponentReplace(curOcc, subAsy)
+                        '    'subAsy.ReplaceFrame(curOcc, subAsy)
+                        '    subAsy.ReplaceOccurrencesByIndex(curOcc)
+                        'End If
+
+                        'ReplaceFrame(curOcc, subAsy)
+                        'ComponentReplace(curOcc, subAsy)
+
+                        'we need to open the frame assembly and replace all of the components prior to replacing it in the assembly
+                        'if we call "replaceocccurencesByIndex" with no occurrence it will treat the frame like a root assembly and open the frame file
+                        subAsy.ReplaceOccurrencesByIndex()
+
+                        'the frame document should be the active document coming back from component replacing
+                        Dim frameDoc As AssemblyDocument = _invApp.ActiveDocument
+                        'save and close the document
+                        frameDoc.Save2()
+                        frameDoc.Close()
+
+                        'now replace the frame assembly in the parent assembly with the new file that we just saved
+                        ComponentReplace(curOcc, subAsy)
+
+
+                        'If nTreeNode.Parent IsNot Nothing Then
+                        '    'after replacing the frame assembly occurrence we can close the parent assembly document because the frame assembly is now in place and we don't need to access the parent assembly anymore
+                        '    _invApp.ActiveDocument.Save2()
+                        '    _invApp.ActiveDocument.Close()
+                        'End If
+
+                    Else
+                        ComponentReplace(curOcc, subAsy)
+                        'replace all of the components within the sub assembly
+                        subAsy.ReplaceOccurrencesByIndex(curOcc)
+                    End If
+
+                    'ComponentReplace(curOcc, subAsy)
 
                     'update part number if the name has changed
                     If subAsy.OriginalName IsNot subAsy.NewName Then
                         UpdatePartNumber(curOcc, subAsy, _invApp)
                     End If
 
-                    If subAsy.SubType = "Frame" Then
-                        subAsy.ReplaceFrame(curOcc)
-                    Else
-                        subAsy.ReplaceOccurrencesByIndex(curOcc)
-                    End If
+
                 Else
                     _form.Log("Not replacing sub-assembly " & subAsy.OriginalName & " because copy enabled is false")
                 End If
@@ -625,6 +805,7 @@ Friend Class AssemblyCopyObject
                 _form.Log("Replaced " & subAsy.OriginalName & " with:" & subAsy.NewFullFileName, numLines:=1)
                 Return
             Catch asyRepEx As Exception
+                _form.Log(curOcc.Name & " was not replaced successfully on the first attempt.")
                 _form.Log("******ERROR REPLACING SUB-ASSEMBLY******")
                 _form.Log(subAsy.OriginalName & " with:")
                 _form.Log(subAsy.NewFullFileName)
@@ -729,13 +910,15 @@ Friend Class AssemblyCopyObject
     ''' Changes the frame assembly id and frame skeleton component id to a new id
     ''' </summary>
     ''' <param name="frmOcc"></param>
-    Private Sub ReplaceFrame(ByRef frmOcc As ComponentOccurrence)
+    ''' <param name="frmAssemblyObject"></param>
+    Private Sub ReplaceFrame(ByRef frmOcc As ComponentOccurrence, ByRef frmAssemblyObject As AssemblyCopyObject)
         Debug.WriteLine("Replacing Frame Assembly: " & frmOcc.Name)
 
         'replace the old skeleton id with a new one
         Dim nSkelId As String = Nothing
 
         'replace the skelton id in the frame assembly attributes
+        'we are now doing this in the copy phase
         For Each attSet As AttributeSet In frmOcc.Definition.AttributeSets
             For Each atri As Attribute In attSet
                 If atri.Name = "Frame.Skeletons" Then
@@ -745,7 +928,7 @@ Friend Class AssemblyCopyObject
 
                     Dim oSkelId As String = oAtriVal.Substring(skelIdStart, skelIdEnd - skelIdStart)
 
-                    nSkelId = GenerateNewSkelId(oSkelId)
+                    nSkelId = GenerateNewID(oSkelId)
 
                     Dim nAtriVal As String = oAtriVal.Substring(0, skelIdStart) & nSkelId &
                         oAtriVal.Substring(skelIdEnd)
@@ -755,7 +938,7 @@ Friend Class AssemblyCopyObject
             Next
         Next
 
-        Dim curAsyOccs As ComponentOccurrences = frmOcc.Definition.Occurrences
+        Dim frameAsyOccs As ComponentOccurrences = frmOcc.Definition.Occurrences
         'replace the parts in frame assembly
         If prtList.Count > 0 Then
             For Each part As InvtPartObj In prtList
@@ -765,7 +948,7 @@ Friend Class AssemblyCopyObject
                 ElseIf part.CopyEnabled = False Then
                     _form.Log("Skipping Part: " & part.OriginalName & " because copy enabled is false", numLines:=1)
                 Else
-                    Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(curAsyOccs, part)
+                    Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(frameAsyOccs, part)
                     ComponentReplace(curOcc, part)
                     If part.OriginalName IsNot part.NewName Then
                         UpdatePartNumber(curOcc, part, _invApp)
@@ -779,15 +962,18 @@ Friend Class AssemblyCopyObject
             For Each subAsy As AssemblyCopyObject In subAsyList
 
                 If subAsy.CopyEnabled Then
-                    Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(curAsyOccs, subAsy)
-                    ComponentReplace(curOcc, subAsy)
+                    Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(frameAsyOccs, subAsy)
+
                     If subAsy.OriginalName IsNot subAsy.NewName Then
                         UpdatePartNumber(curOcc, subAsy, _invApp)
                     End If
 
                     If subAsy.SubType = "Frame" Then
-                        subAsy.ReplaceFrame(curOcc)
+                        'subAsy.ReplaceFrame(curOcc, subAsy)
+                        Debug.WriteLine("Replacing Frame Sub-Assembly: " & subAsy.OriginalName)
+                        ReplaceFrame(curOcc, subAsy)
                     Else
+                        ComponentReplace(curOcc, subAsy)
                         subAsy.ReplaceOccurrencesByIndex(curOcc)
                     End If
                 Else
@@ -809,6 +995,23 @@ Friend Class AssemblyCopyObject
 
     End Sub
 
+
+    Private Sub ReplaceFrame2(ByRef frmOcc As ComponentOccurrence, ByRef frmAssemblyObject As AssemblyCopyObject)
+        Debug.WriteLine("Replacing Frame Assembly: " & frmOcc.Name)
+
+        'open the frame assembly and replace all of the components within it before trying to place the frame in the new assembly.
+        Dim nameValueMap As Inventor.NameValueMap = _invApp.TransientObjects.CreateNameValueMap
+        nameValueMap.Add("SkipAllUnresolvedFiles", True)
+
+        'we need to open the new assembly
+        'at this point the frame assembly Is still a sub assembly of the parent
+        Dim frameAsmDoc As AssemblyDocument = _invApp.Documents.OpenWithOptions(frmAssemblyObject.NewFullFileName, nameValueMap, True)
+
+        Dim frameAsyOccs As ComponentOccurrences = frameAsmDoc.ComponentDefinition.Occurrences
+
+        frmAssemblyObject.ReplaceOccurrencesByIndex()
+
+    End Sub
     Function GetSkeletonOcc(ByVal frmOccs As ComponentOccurrences) As ComponentOccurrence
         Dim skeletonOcc As ComponentOccurrence = Nothing
         For Each occ As ComponentOccurrence In frmOccs
@@ -839,6 +1042,13 @@ Friend Class AssemblyCopyObject
         Return skelIDStart
     End Function
 
+    Private Function GetPathIdStartInt(ByVal atri As String) As Integer
+        Dim pathIDStart = InStr(atri, "PathID")
+        Dim pathId As String = atri.Substring(pathIDStart)
+        pathIDStart = pathIDStart + InStr(pathId, """")
+        Return pathIDStart
+    End Function
+
 
     ''' <summary>
     ''' Gets the integer for the end of the skeleton id in the frame assembly attribute value
@@ -852,13 +1062,19 @@ Friend Class AssemblyCopyObject
         Return skelIdEnd
     End Function
 
+    Private Function GetPathIdEndInt(ByVal atri As String, ByVal pathIdStart As Integer) As Integer
+        Dim pathId As String = atri.Substring(pathIdStart)
+        Dim pathIdEnd As Integer = pathIdStart + InStr(pathId, """") - 1
+        Return pathIdEnd
+    End Function
+
 
     ''' <summary>
     ''' Replaces everything after the final "-" in the original skeleton id with random integers
     ''' </summary>
     ''' <param name="oSkelId"></param>
     ''' <returns></returns>
-    Private Function GenerateNewSkelId(ByVal oSkelId As String) As String
+    Private Function GenerateNewID(ByVal oSkelId As String) As String
         Dim newSkelIdEnd As String = oSkelId.Substring(oSkelId.LastIndexOf("-") + 1)
         Debug.WriteLine("SkeletonID End: " & newSkelIdEnd)
         Dim i As Integer = 0
@@ -1010,6 +1226,12 @@ Friend Class AssemblyCopyObject
     ReadOnly Property DuplicateOccurrenceIndexList As List(Of Integer)
         Get
             Return _duplicateOccIndexList
+        End Get
+    End Property
+
+    ReadOnly Property ContainsFrame As Boolean
+        Get
+            Return _containsFrame
         End Get
     End Property
 
