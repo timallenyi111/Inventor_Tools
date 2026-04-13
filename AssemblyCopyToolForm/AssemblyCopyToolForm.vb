@@ -81,13 +81,6 @@ Friend Class AssemblyCopyToolForm
         TB_Prefix.Text = defaultPrefix
         TB_Suffix.Text = defaultSuffix
 
-        'create and setup the AssemblyCopyObject
-        'rootAssemblyObject = New AssemblyCopyObject(Me, _invApp)
-        'rootAssemblyObject.InitialSetup()
-        'If EnableLog Then
-        '    rootAssemblyObject.GenerateSetupLog()
-        'End If
-
         'create the root assembly object
         rootAssemblyObject = InitialSetup(_invApp, Me)
 
@@ -109,6 +102,8 @@ Friend Class AssemblyCopyToolForm
         ' setup tree view
         TV_nComponent.Nodes.Add(rootAssemblyObject.TreeNode)
 
+
+
         sw.Stop()
         Debug.WriteLine("Form Load Time: " & sw.ElapsedMilliseconds & " ms")
     End Sub
@@ -123,6 +118,7 @@ Friend Class AssemblyCopyToolForm
 
         ' _writer.Close()
     End Sub
+
     ''' <summary>
     ''' The Number of Lines is the number of lines that will be added after the message.
     ''' </summary>

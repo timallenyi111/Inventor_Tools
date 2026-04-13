@@ -8,12 +8,12 @@ Module InitialSetupFunctions
     Private _NewRootDirectory As String = String.Empty
     Private _ProjectDirectory As String = String.Empty
     Private _form As AssemblyCopyToolForm
-    Private _logTab As Integer = 0
     Function InitialSetup(ByRef inventorApp As Inventor.Application, ByRef form As AssemblyCopyToolForm) As InvtAssembly
         'store the form in as a global variable
         _form = form
         Dim rootAssemblyDoc As Inventor.AssemblyDocument
 
+        'try setting the root assembly document
         Try
             rootAssemblyDoc = inventorApp.ActiveDocument
         Catch ex As Exception
@@ -21,31 +21,30 @@ Module InitialSetupFunctions
             Return Nothing
         End Try
 
+        '*******SET THE INITIAL SETUP GLOBAL VARIABLES********
         'get the project directory to use as a base path for the copied assembly
         Dim actProj As Inventor.DesignProject = inventorApp.DesignProjectManager.ActiveDesignProject
         _ProjectDirectory = actProj.FullFileName.Substring(0, actProj.FullFileName.LastIndexOf("\") + 1)
-        'create the new root directory based on the contents of the text box data from the _form                
         _ContentCenterPath = inventorApp.DesignProjectManager.ActiveDesignProject.ContentCenterPath
-
         Dim rootAssemblyFullFileName As String = rootAssemblyDoc.FullFileName
         _NewRootDirectory = SetNewRootDirectory(_ProjectDirectory, rootAssemblyFullFileName)
+        '*****************************************************
 
-        'create the root assembly object 
-        'the occurrence index for the root is 0 (it doesn't really matter)
+        'create the root assembly object (the occurrence index for the root is 0 (it doesn't really matter))      
         Dim rootAssemblyObject As New InvtAssembly(rootAssemblyDoc, 0, nRootDirectory:=_NewRootDirectory)
-
         'setup the new properties in the root assembly object        
-
         rootAssemblyObject.NewName = _form.TB_Prefix.Text & rootAssemblyObject.OriginalName & _form.TB_Suffix.Text
-
-        'create the root tree node for the _form and store it in the root assembly object
         rootAssemblyObject.TreeNode = New TreeNode(rootAssemblyObject.NewName)
 
         'add all of the components to the assembly object
         rootAssemblyObject = AddSubComponents(rootAssemblyObject)
-        'reset the log tab back to 0
 
-        _logTab = 0
+        'clear the parts that are highlighted on startup by clearing the active document selectset
+        rootAssemblyDoc.SelectSet.Clear()
+
+        'assign the necessary tags to the tree nodes for highlighting in the Inventor model
+        AssignNodeTags(rootAssemblyObject, parentIsRoot:=True)
+
         'log the results of the initial setup
         LogAssembly(rootAssemblyObject, isRoot:=True)
 
@@ -56,6 +55,7 @@ Module InitialSetupFunctions
     ''' Adds all components to the part and assembly list of the input assembly object. This function is recursive so it will continue to add subcomponents until there are no more subassemblies in the structure.
     ''' </summary>
     ''' <param name="parentAsmObject"></param>
+    ''' <param name="parentIsRoot">Indicates whether the parent assembly is the root assembly.</param>
     ''' <returns></returns>
     Private Function AddSubComponents(ByRef parentAsmObject As InvtAssembly) As InvtAssembly
         Dim compOccs As Inventor.ComponentOccurrences = parentAsmObject.OriginalAsmDocument.ComponentDefinition.Occurrences
@@ -131,9 +131,7 @@ Module InitialSetupFunctions
 
         'setup all components in the subassembly
         'this is recursive so it will continue to go down the structure until there are no more subassemblies
-        _logTab += 1
         newAssemblyObject = AddSubComponents(newAssemblyObject)
-        _logTab -= 1
 
         Return newAssemblyObject
     End Function
@@ -149,13 +147,9 @@ Module InitialSetupFunctions
         Dim newAssemblyObject As New InvtAssembly(frameDoc, occIndex, nRootDirectory:=_NewRootDirectory, AsyOcc:=frameOcc)
         newAssemblyObject.TreeNode = ParentAssemblyNode.Nodes.Add(newAssemblyObject.NewName)
 
-        'increase the log tab by 1 for adding subcomponents
-        _logTab += 1
         'setup all components in the frame assembly
         'this is recursive so it will continue to go down the structure until there are no more subassemblies
         newAssemblyObject = AddSubComponents(newAssemblyObject)
-        'decrease the log tab by 1 to return back the the current component tab level
-        _logTab -= 1
 
         Return newAssemblyObject
     End Function
@@ -189,38 +183,74 @@ Module InitialSetupFunctions
         Return isFrame
     End Function
 
-#Region "Logging Functions"
     ''' <summary>
-    ''' logs the different component types as they are added
+    ''' Assigns the necessary tag to the component tree node for highlighting components (along with their duplicates) in the Inventor model.  
+    ''' | ROOT ASSEMBLY COMPONENTS -> component occurrence
+    ''' | SUB-ASSEMBLY COMPONENTS -> component occurrence proxy
     ''' </summary>
-    ''' <param name="InvtObj"></param>
-    ''' <param name="_logTab"></param>
-    Private Sub LogComponent(ByRef InvtObj As Object)
-        If TypeOf (InvtObj) Is InvtPart Then
-            Dim prtObj As InvtPart = InvtObj
-            _form.Log("Part Name: " & prtObj.OriginalName, numTabs:=_logTab, numLinesBefore:=1)
-            _form.Log("Original Part Full File Name: " & prtObj.OriginalFullFileName, numTabs:=_logTab)
-            _form.Log("New Part Full File Name: " & prtObj.NewFullFileName, numTabs:=_logTab)
-            If prtObj.IsContentCenter Then
-                _form.Log("Is Content Center Part: " & prtObj.IsContentCenter, numTabs:=_logTab)
-            End If
-        ElseIf TypeOf (InvtObj) Is InvtAssembly Then
-            Dim asmObj As InvtAssembly = InvtObj
-            _form.Log("Assembly Name: " & asmObj.OriginalName, numTabs:=_logTab, numLinesBefore:=1)
-            _form.Log("Original Assembly Full File Name: " & asmObj.OriginalFullFileName, numTabs:=_logTab)
-            _form.Log("New Assembly Full File Name: " & asmObj.NewFullFileName, numTabs:=_logTab)
-        ElseIf TypeOf (InvtObj) Is InvtFrame Then
-            Dim frmObj As InvtFrame = InvtObj
-            _form.Log("Frame Name: " & frmObj.OriginalName, numTabs:=_logTab, numLinesBefore:=1)
-            _form.Log("Frame Original Full File Name: " & frmObj.OriginalFullFileName, numTabs:=_logTab)
-            _form.Log("Frame Original New File Name: " & frmObj.NewFullFileName, numTabs:=_logTab)
-            _form.Log("Frame Original Skeleton ID: " & frmObj.OriginalSkeletonID, numTabs:=_logTab)
-            _form.Log("Frame New Skeleton ID: " & frmObj.NewSkeletonID, numTabs:=_logTab)
+    ''' <param name="parentAssemblyObject"></param>
+    ''' <param name="parentIsRoot"></param>
+    Private Sub AssignNodeTags(ByRef parentAssemblyObject As InvtAssembly, ByRef parentIsRoot As Boolean)
+        If parentIsRoot Then
+            parentAssemblyObject.TreeNode.Tag = parentAssemblyObject
+
+            For Each part In parentAssemblyObject.PartList
+                Dim occList As List(Of Inventor.ComponentOccurrence) = part.DuplicateOccurrences
+                occList.Add(part.OriginalComponentOccurrence)
+                part.TreeNode.Tag = occList
+            Next
+            For Each subAsm In parentAssemblyObject.AssemblyList
+                Dim occList As List(Of Inventor.ComponentOccurrence) = subAsm.DuplicateOccurrences
+                occList.Add(subAsm.OriginalComponentOccurrence)
+                subAsm.TreeNode.Tag = occList
+                AssignNodeTags(subAsm, parentIsRoot:=False)
+            Next
+            For Each subFrame In parentAssemblyObject.FrameList
+                Dim occList As List(Of Inventor.ComponentOccurrence) = subFrame.DuplicateOccurrences
+                occList.Add(subFrame.OriginalComponentOccurrence)
+                subFrame.TreeNode.Tag = occList
+                AssignNodeTags(subFrame.CoreAssemblyObject, parentIsRoot:=False)
+            Next
+
         Else
-            _form.Log("*******An unrecognized object type was passed to the LogComponent function.", numLinesBefore:=1, numTabs:=_logTab)
+            Dim parentAsmOccurrences As Inventor.ComponentOccurrences = parentAssemblyObject.OriginalComponentOccurrence.SubOccurrences
+            For Each part In parentAssemblyObject.PartList
+                Dim occProxyList As New List(Of Inventor.ComponentOccurrenceProxy)
+                Dim occProxy As Inventor.ComponentOccurrenceProxy = parentAsmOccurrences.Item(part.OccurrenceIndex)
+                occProxyList.Add(occProxy)
+                For Each occIndex In part.DuplicateOccurrenceIndexList
+                    occProxyList.Add(parentAsmOccurrences.Item(occIndex))
+                Next
+                part.TreeNode.Tag = occProxyList
+            Next
+
+            For Each subAsm In parentAssemblyObject.AssemblyList
+                Dim occProxyList As New List(Of Inventor.ComponentOccurrenceProxy)
+                Dim occProxy As Inventor.ComponentOccurrenceProxy = parentAsmOccurrences.Item(subAsm.OccurrenceIndex)
+                occProxyList.Add(occProxy)
+                For Each occIndex In subAsm.DuplicateOccurrenceIndexList
+                    occProxyList.Add(parentAsmOccurrences.Item(occIndex))
+                Next
+                subAsm.TreeNode.Tag = occProxyList
+                AssignNodeTags(subAsm, parentIsRoot:=False)
+            Next
+
+            For Each subFrame In parentAssemblyObject.FrameList
+                Dim occProxyList As New List(Of Inventor.ComponentOccurrenceProxy)
+                Dim occProxy As Inventor.ComponentOccurrenceProxy = parentAsmOccurrences.Item(subFrame.OccurrenceIndex)
+                occProxyList.Add(occProxy)
+                For Each occIndex In subFrame.DuplicateOccurrenceIndexList
+                    occProxyList.Add(parentAsmOccurrences.Item(occIndex))
+                Next
+                subFrame.TreeNode.Tag = occProxyList
+
+                AssignNodeTags(subFrame.CoreAssemblyObject, parentIsRoot:=False)
+            Next
         End If
 
     End Sub
+
+#Region "Logging Functions"
 
     ''' <summary>
     ''' Creates a new root directory for the copied assembly based on the project directory and the name of the root assembly. The new root directory will be used as the base file path for all copied components in the structure, so it is important that this is set correctly before any names or file paths are changed. The new root directory is set to be a folder with the same name as the root assembly in the project directory. For example, if the project directory is "C:\Projects\MyProject\" and the root assembly name is "MyAssembly.iam" then the new root directory will be set to "C:\Projects\MyProject\MyAssembly\".

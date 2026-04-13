@@ -181,6 +181,15 @@ Friend Class InvtFrame
             Return _nSkeletonID
         End Get
     End Property
+    ''' <summary>
+    ''' This gives access to the core InvtAssembly object that is being used to store the frame assembly information. 
+    ''' </summary>
+    ''' <returns></returns>
+    ReadOnly Property CoreAssemblyObject As InvtAssembly
+        Get
+            Return _frameAssemblyObject
+        End Get
+    End Property
 
 #End Region
 
