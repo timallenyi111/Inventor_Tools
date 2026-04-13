@@ -19,7 +19,8 @@ Friend Class AssemblyCopyToolForm
     Private selectedNode As TreeNode
     Private oAsmCompDef As AssemblyComponentDefinition
     Private newDirectory As String
-    Private rootAssemblyObject As AssemblyCopyObject
+    'Private rootAssemblyObject As AssemblyCopyObject
+    Private rootAssemblyObject As InvtAssembly
     Dim defaultSuffix As String = "_2"
     Dim defaultPrefix As String = ""
     Dim highlightSet As Inventor.HighlightSet
@@ -64,7 +65,7 @@ Friend Class AssemblyCopyToolForm
             _writer.AutoFlush = True
         End If
 
-        Debug.WriteLine(_invApp.DesignProjectManager.ActiveDesignProject.ContentCenterPath)
+        'Debug.WriteLine(_invApp.DesignProjectManager.ActiveDesignProject.ContentCenterPath)
         Dim documents As Inventor.Documents = _invApp.Documents
         For Each doc As Inventor.Document In documents
             Debug.WriteLine(doc.FullFileName)
@@ -81,10 +82,18 @@ Friend Class AssemblyCopyToolForm
         TB_Suffix.Text = defaultSuffix
 
         'create and setup the AssemblyCopyObject
-        rootAssemblyObject = New AssemblyCopyObject(Me, _invApp)
-        rootAssemblyObject.InitialSetup()
-        If EnableLog Then
-            rootAssemblyObject.GenerateSetupLog()
+        'rootAssemblyObject = New AssemblyCopyObject(Me, _invApp)
+        'rootAssemblyObject.InitialSetup()
+        'If EnableLog Then
+        '    rootAssemblyObject.GenerateSetupLog()
+        'End If
+
+        'create the root assembly object
+        rootAssemblyObject = InitialSetup(_invApp, Me)
+
+        If rootAssemblyObject Is Nothing Then
+            'there wasn't an assembly document open so the program will end after the user clicks ok on the message box
+            Me.Close()
         End If
 
         TB_FileName.Text = rootAssemblyObject.OriginalName & ".iam"
@@ -98,7 +107,7 @@ Friend Class AssemblyCopyToolForm
         FormLayoutSetup(True)
 
         ' setup tree view
-        TV_nComponent.Nodes.Add(rootAssemblyObject.NewTreeNode)
+        TV_nComponent.Nodes.Add(rootAssemblyObject.TreeNode)
 
         sw.Stop()
         Debug.WriteLine("Form Load Time: " & sw.ElapsedMilliseconds & " ms")
@@ -114,8 +123,14 @@ Friend Class AssemblyCopyToolForm
 
         ' _writer.Close()
     End Sub
-
-    Public Sub Log(message As String, Optional ByRef numTabs As Integer = 0, Optional ByRef numLines As Integer = 0, Optional ByRef debugWrite As Boolean = True)
+    ''' <summary>
+    ''' The Number of Lines is the number of lines that will be added after the message.
+    ''' </summary>
+    ''' <param name="message"></param>
+    ''' <param name="numTabs"></param>
+    ''' <param name="numLinesAfter"></param>
+    ''' <param name="debugWrite"></param>
+    Public Sub Log(message As String, Optional ByRef numTabs As Integer = 0, Optional ByRef numLinesBefore As Integer = 0, Optional ByRef numLinesAfter As Integer = 0, Optional ByRef debugWrite As Boolean = True)
         Dim x As Integer = 0
         'Write to Debug console
         If debugWrite Then
@@ -125,10 +140,16 @@ Friend Class AssemblyCopyToolForm
                 x += 1
             End While
 
+            x = 0
+            While x < numLinesBefore
+                Debug.WriteLine("")
+                x += 1
+            End While
+
             Debug.WriteLine(message)
 
             x = 0
-            While x < numLines
+            While x < numLinesAfter
                 Debug.WriteLine("")
                 x += 1
             End While
@@ -141,9 +162,14 @@ Friend Class AssemblyCopyToolForm
                 message = vbTab & message
                 x += 1
             End While
+            x = 0
+            While x < numLinesBefore
+                _writer.WriteLine("")
+                x += 1
+            End While
             _writer.WriteLine(message)
             x = 0
-            While x < numLines
+            While x < numLinesAfter
                 _writer.WriteLine("")
                 x += 1
             End While
@@ -380,7 +406,7 @@ Friend Class AssemblyCopyToolForm
             If TV_nComponent.SelectedNode.Parent Is Nothing Then
                 'this is a root assembly occurence
 
-            ElseIf TV_nComponent.SelectedNode.Parent Is rootAssemblyObject.NewTreeNode Then
+            ElseIf TV_nComponent.SelectedNode.Parent Is rootAssemblyObject.TreeNode Then
                 'this is a component of the root assembly
                 For Each occ As ComponentOccurrence In TV_nComponent.SelectedNode.Tag
                     If occ IsNot Nothing Then highlightSet.AddItem(occ)

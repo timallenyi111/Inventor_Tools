@@ -1,16 +1,17 @@
 ﻿Imports System.IO
 Module ButtonClicks
-    Sub CopyButtonHandler(frm As AssemblyCopyToolForm, rootAssemblyObject As AssemblyCopyObject, invApp As Inventor.Application,
+    Sub CopyButtonHandler(frm As AssemblyCopyToolForm, rootAssemblyObject As InvtAssembly, invApp As Inventor.Application,
                           sender As Object, e As EventArgs)
         AssemblyCopyToolForm.LB_CopyComplete.Visible = True
         frm.LB_CopyComplete.Text = "Starting Process..."
-        rootAssemblyObject.UpdateNewProperties()
-        rootAssemblyObject.CreateNewFiles(dryrun:=False)
+
+        'rootAssemblyObject.UpdateNewProperties()
+        'rootAssemblyObject.CreateNewFiles(dryrun:=False)
 
         'try closing the original assembly without saving to see if this fixes the platform replacement issue.
         invApp.ActiveDocument.Close(False)
 
-        rootAssemblyObject.ReplaceOccurrencesByIndex()
+        'rootAssemblyObject.ReplaceOccurrencesByIndex()
         frm.LB_CopyComplete.Text = "Assembly Copy Complete!"
         invApp.ActiveDocument.Save2()
     End Sub

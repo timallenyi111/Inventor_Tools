@@ -67,7 +67,7 @@ Friend Class AssemblyCopyObject
             'hltSet = oAsmDoc.CreateHighlightSet()
         End If
 
-        _form.Log("", numLines:=1)
+        _form.Log("", numLinesAfter:=1)
         _form.Log("***** " & oAsyName & " component setup *****")
 
         Dim curOccIndex As Integer = 1
@@ -290,43 +290,43 @@ Friend Class AssemblyCopyObject
 
     Sub GenerateSetupLog(Optional ByRef isRoot As Boolean = True)
         If isRoot Then
-            _form.Log("", numLines:=4)
-            _form.Log("*****ROOT SETUP SUMMARY*****", numLines:=1)
+            _form.Log("", numLinesAfter:=4)
+            _form.Log("*****ROOT SETUP SUMMARY*****", numLinesAfter:=1)
             _form.Log("Root Assembly: " & oAsyName)
             _form.Log("Original File Name: " & oFullFileName, numTabs:=1)
             _form.Log("Defualt New Name: " & nAsyName, numTabs:=1)
-            _form.Log("Default New File Name: " & nFullFileName, numTabs:=1, numLines:=1)
+            _form.Log("Default New File Name: " & nFullFileName, numTabs:=1, numLinesAfter:=1)
         Else
-            _form.Log("", numLines:=2)
+            _form.Log("", numLinesAfter:=2)
             _form.Log("*****SUB-ASSEMBLY SETUP*****")
             _form.Log("Sub Assembly: " & oAsyName)
             _form.Log("Original File Name: " & oFullFileName, numTabs:=1)
             _form.Log("Defualt New Name: " & nAsyName, numTabs:=1)
-            _form.Log("Default New File Name: " & nFullFileName, numTabs:=1, numLines:=1)
+            _form.Log("Default New File Name: " & nFullFileName, numTabs:=1, numLinesAfter:=1)
         End If
 
         If prtList.Count > 0 Then
             _form.Log("***** PARTS LIST ******")
-            _form.Log("_______________________", numLines:=1)
+            _form.Log("_______________________", numLinesAfter:=1)
             For Each part As InvtPartObj In prtList
                 _form.Log(part.OriginalName & ": part added")
                 _form.Log("original file name: " & part.OriginalFullFileName, numTabs:=1)
-                _form.Log("new file name: " & part.NewFullFileName, numTabs:=1, numLines:=1)
+                _form.Log("new file name: " & part.NewFullFileName, numTabs:=1, numLinesAfter:=1)
             Next
             _form.Log("*****EOL*****")
         End If
 
         If subAsyList.Count > 0 Then
-            _form.Log("", numLines:=1)
+            _form.Log("", numLinesAfter:=1)
             _form.Log("***** Sub-Assembly LIST ******")
-            _form.Log("_______________________", numLines:=1)
+            _form.Log("_______________________", numLinesAfter:=1)
             For Each subAsy As AssemblyCopyObject In subAsyList
                 _form.Log(subAsy.OriginalName & ": assembly added")
                 If subAsy.SubType = "Frame" Then
                     _form.Log("**FRAME**")
                 End If
                 _form.Log("original file name: " & subAsy.OriginalFullFileName, numTabs:=1)
-                _form.Log("new file name: " & subAsy.NewFullFileName, numTabs:=1, numLines:=1)
+                _form.Log("new file name: " & subAsy.NewFullFileName, numTabs:=1, numLinesAfter:=1)
             Next
             _form.Log("*****EOL*****")
             For Each subAsy As AssemblyCopyObject In subAsyList
@@ -482,7 +482,7 @@ Friend Class AssemblyCopyObject
         Else
             If CopyEnabled Then
                 If ContainsFrame Then
-                    _form.Log("This assembly contains a frame sub-assembly. When copying this assembly, the frame sub-assembly will be copied and replaced first before copying and replacing the rest of the components in this assembly because of the potential complexity of the frame assembly and the fact that it is often generated from iLogic with unique file naming schemes for the components within it. After the frame sub-assembly has been copied and replaced, the rest of the components in this assembly will be copied and replaced as normal.", numLines:=2)
+                    _form.Log("This assembly contains a frame sub-assembly. When copying this assembly, the frame sub-assembly will be copied and replaced first before copying and replacing the rest of the components in this assembly because of the potential complexity of the frame assembly and the fact that it is often generated from iLogic with unique file naming schemes for the components within it. After the frame sub-assembly has been copied and replaced, the rest of the components in this assembly will be copied and replaced as normal.", numLinesAfter:=2)
                 Else
                     CopyFile(oFullFileName, nFullFileName)
                 End If
@@ -560,7 +560,7 @@ Friend Class AssemblyCopyObject
                     oskelID = oAtriVal.Substring(skelIdStart, skelIdEnd - skelIdStart)
                     Dim oSkelPath As String = oAtriVal.Substring(skelPathStart, skelPathEnd - skelPathStart)
 
-                    nskelID = GenerateNewID(oSkelId)
+                    nskelID = GenerateNewID(oskelID)
                     Dim nskelPath As String = GenerateNewID(oSkelPath)
 
 
@@ -647,7 +647,7 @@ Friend Class AssemblyCopyObject
             _form.Log("!!!!!!! FILE SKIPPED BECAUSE IT ALREADY EXISTS !!!!!!!")
         Else
             System.IO.File.Copy(oFile, nFile, False)
-            _form.Log("COPY SUCCESSFUL", numTabs:=1, numLines:=1)
+            _form.Log("COPY SUCCESSFUL", numTabs:=1, numLinesAfter:=1)
             _form.LB_CopyComplete.Text = "Saving File: " & nFile
         End If
     End Sub
@@ -678,7 +678,7 @@ Friend Class AssemblyCopyObject
                     Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(curAsyOccs, subAsy)
 
                     If subAsy.SubType = "Frame" Then
-                        'If nTreeNode.Parent IsNot Nothing Then
+                        'If _treeNode.Parent IsNot Nothing Then
                         '    'this is not the root directory so we need to open this document
                         '    'we need to open the parent document of the frame assembly occurrence in order to replace the frame assembly occurrence
                         '    Dim nameValueMap As Inventor.NameValueMap = _invApp.TransientObjects.CreateNameValueMap
@@ -686,7 +686,7 @@ Friend Class AssemblyCopyObject
 
                         '    ' we need to open the new assembly
                         '    ' at this point the frame assembly is still a sub assembly of the parent
-                        '    Dim parentAsmDoc As AssemblyDocument = _invApp.Documents.OpenWithOptions(nFullFileName, nameValueMap, True)
+                        '    Dim parentAsmDoc As AssemblyDocument = _invApp.Documents.OpenWithOptions(_nFullFileName, nameValueMap, True)
 
                         '    'we have to recapture the component occurrence because we opened a new file
                         '    Dim currentDoc As AssemblyDocument = _invApp.ActiveDocument
@@ -719,7 +719,7 @@ Friend Class AssemblyCopyObject
                         ComponentReplace(curOcc, subAsy)
 
 
-                        'If nTreeNode.Parent IsNot Nothing Then
+                        'If _treeNode.Parent IsNot Nothing Then
                         '    'after replacing the frame assembly occurrence we can close the parent assembly document because the frame assembly is now in place and we don't need to access the parent assembly anymore
                         '    _invApp.ActiveDocument.Save2()
                         '    _invApp.ActiveDocument.Close()
@@ -749,9 +749,9 @@ Friend Class AssemblyCopyObject
             For Each part As InvtPartObj In prtList
                 'skip content center parts and parts that are not enabled for copy
                 If part.SubType = "Content Center Part" Then
-                    _form.Log("Skipping Content Center Part: " & part.OriginalName, numLines:=1)
+                    _form.Log("Skipping Content Center Part: " & part.OriginalName, numLinesAfter:=1)
                 ElseIf part.CopyEnabled = False Then
-                    _form.Log("Skipping Part: " & part.OriginalName & " because copy enabled is false", numLines:=1)
+                    _form.Log("Skipping Part: " & part.OriginalName & " because copy enabled is false", numLinesAfter:=1)
                 Else
                     Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(curAsyOccs, part)
                     ComponentReplace(curOcc, part)
@@ -776,20 +776,20 @@ Friend Class AssemblyCopyObject
             Try
                 'replace all instances of this occurrence
                 curOcc.Replace(part.NewFullFileName, True)
-                _form.Log("Replaced " & part.OriginalName & " with:" & part.NewFullFileName, numLines:=1)
+                _form.Log("Replaced " & part.OriginalName & " with:" & part.NewFullFileName, numLinesAfter:=1)
                 Return
             Catch pRepEx As Exception
                 _form.Log("******ERROR REPLACING PART******")
                 _form.Log("Replacing " & part.OriginalName & " with:")
                 _form.Log(part.NewFullFileName)
-                _form.Log(pRepEx.Message, numLines:=1)
+                _form.Log(pRepEx.Message, numLinesAfter:=1)
                 newFileName = part.NewFullFileName
                 System.Threading.Thread.Sleep(1000)
                 _form.Log("Trying again after a 1 second delay...")
                 Try
                     curOcc.Replace(part.NewFullFileName, True)
                     _form.Log("SUCCESSFULLY REPLACED ON SECOND ATTEMPT")
-                    _form.Log("Replaced " & part.OriginalName & " with:" & part.NewFullFileName, numLines:=1)
+                    _form.Log("Replaced " & part.OriginalName & " with:" & part.NewFullFileName, numLinesAfter:=1)
                 Catch ex As Exception
                     _form.Log("Second attempt failed.")
                 End Try
@@ -802,21 +802,21 @@ Friend Class AssemblyCopyObject
             Try
                 'replace all instances of this occurrence
                 curOcc.Replace(subAsy.NewFullFileName, True)
-                _form.Log("Replaced " & subAsy.OriginalName & " with:" & subAsy.NewFullFileName, numLines:=1)
+                _form.Log("Replaced " & subAsy.OriginalName & " with:" & subAsy.NewFullFileName, numLinesAfter:=1)
                 Return
             Catch asyRepEx As Exception
                 _form.Log(curOcc.Name & " was not replaced successfully on the first attempt.")
                 _form.Log("******ERROR REPLACING SUB-ASSEMBLY******")
                 _form.Log(subAsy.OriginalName & " with:")
                 _form.Log(subAsy.NewFullFileName)
-                _form.Log(asyRepEx.Message, numLines:=1)
+                _form.Log(asyRepEx.Message, numLinesAfter:=1)
                 newFileName = subAsy.NewFullFileName
                 System.Threading.Thread.Sleep(1000)
                 _form.Log("Trying again after a 1 second delay...")
                 Try
                     curOcc.Replace(subAsy.NewFullFileName, True)
                     _form.Log("SUCCESSFULLY REPLACED ON SECOND ATTEMPT")
-                    _form.Log("Replaced " & subAsy.OriginalName & " with:" & subAsy.NewFullFileName, numLines:=1)
+                    _form.Log("Replaced " & subAsy.OriginalName & " with:" & subAsy.NewFullFileName, numLinesAfter:=1)
                 Catch ex As Exception
                     _form.Log("Second attempt failed.")
                 End Try
@@ -824,7 +824,7 @@ Friend Class AssemblyCopyObject
         Else
             _form.Log("******ERROR REPLACING COMPONENT******")
             _form.Log("ComponentReplace called with invalid component type.")
-            _form.Log(component.GetType.ToString(), numLines:=1)
+            _form.Log(component.GetType.ToString(), numLinesAfter:=1)
             Return
         End If
 
@@ -869,7 +869,7 @@ Friend Class AssemblyCopyObject
                 compOcc = occurrences.Item(part.OccurrenceIndex)
             Catch partEx As Exception
                 _form.Log("******ERROR*****")
-                _form.Log("Error retrieving occurrence by index for part: " & part.OriginalName & "; " & partEx.Message, numLines:=1)
+                _form.Log("Error retrieving occurrence by index for part: " & part.OriginalName & "; " & partEx.Message, numLinesAfter:=1)
             End Try
         ElseIf TypeOf component Is AssemblyCopyObject Then
             Dim subAsy As AssemblyCopyObject = CType(component, AssemblyCopyObject)
@@ -877,12 +877,12 @@ Friend Class AssemblyCopyObject
                 compOcc = occurrences.Item(subAsy.OccurrenceIndex)
             Catch asyEx As Exception
                 _form.Log("******ERROR*****")
-                _form.Log("Error retrieving occurrence by index For Sub-assembly: " & subAsy.OriginalName & "; " & asyEx.Message, numLines:=1)
+                _form.Log("Error retrieving occurrence by index For Sub-assembly: " & subAsy.OriginalName & "; " & asyEx.Message, numLinesAfter:=1)
             End Try
         Else
             _form.Log("******ERROR*****")
             _form.Log("GetOccurrenceByIndex called with invalid component type.")
-            _form.Log(component.GetType.ToString(), numLines:=1)
+            _form.Log(component.GetType.ToString(), numLinesAfter:=1)
         End If
 
         Return compOcc
@@ -944,9 +944,9 @@ Friend Class AssemblyCopyObject
             For Each part As InvtPartObj In prtList
                 'skip content center parts and parts that are not enabled for copy
                 If part.SubType = "Content Center Part" Then
-                    _form.Log("Skipping Content Center Part: " & part.OriginalName, numLines:=1)
+                    _form.Log("Skipping Content Center Part: " & part.OriginalName, numLinesAfter:=1)
                 ElseIf part.CopyEnabled = False Then
-                    _form.Log("Skipping Part: " & part.OriginalName & " because copy enabled is false", numLines:=1)
+                    _form.Log("Skipping Part: " & part.OriginalName & " because copy enabled is false", numLinesAfter:=1)
                 Else
                     Dim curOcc As ComponentOccurrence = GetOccurrenceByIndex(frameAsyOccs, part)
                     ComponentReplace(curOcc, part)
@@ -1106,7 +1106,7 @@ Friend Class AssemblyCopyObject
         _form.Log("New File Path: " & nFilePath, numTabs:=1)
         'check if the new directory exists and if it doesn't create one.
         If Directory.Exists(nFilePath) = False Then
-            'Directory.CreateDirectory(nFilePath)
+            'Directory.CreateDirectory(_newFullFileName)
             _form.Log("New Directory Created")
         End If
 
@@ -1115,7 +1115,7 @@ Friend Class AssemblyCopyObject
             _form.Log("!!!!!!! FILE SKIPPED BECAUSE IT ALREADY EXISTS !!!!!!!")
         Else
             'System.IO.File.Copy(oFile, nFile, False)
-            _form.Log("COPY SUCCESSFUL", numTabs:=1, numLines:=1)
+            _form.Log("COPY SUCCESSFUL", numTabs:=1, numLinesAfter:=1)
         End If
     End Sub
 

@@ -1,18 +1,14 @@
-﻿### Base To-Do List
-- [ ] Check if 2 different component files have the same name but different content
-- [x] Figure out how to handle bolted connections and other content center objects
-- [x] Make Frame Generator Members save in a sub-directory "\(parent file name\Frame\)"
-- [x] Show on the form when the copy process is complete
-- [ ] Make an installer
+﻿## Architecture Overall Goals
 
-###To-Do before v0.1
-- [x] Make a Thumbnail
-- [x] Allow renaming of individual components
-- [x] Remove the original tree node
-- [x] Allow the option to not copy certain components
-- [x] If an assembly is not being copied then all of its parts can't be copied either
-- [x] Remove the main menu for v0.1
-- [x] Modernize the UI
+- [] Move the copy and replace logic out of the Assembly Class and into a module in the main program
+- [] Make a frame class that handles generating and replacing ids for frames.
+
+### Importing Strategy
+1.	Read "root assembly document" and create an assembly occurrence with necessary input data
+2.	Create a part occurrence for each part in the assembly and add it to the assembly occurrence
+3. Create a frame occurrence for every frame generator file and store it in the assembly 
+4. Create an assembly occurrence for each assembly in the root assembly document and add it to the assembly occurrence
+5. Repeat steps 2-4 for each assembly occurrence created in step 4
 
 ### Notes
 Frame Attributes:
