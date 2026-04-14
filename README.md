@@ -1,8 +1,10 @@
-﻿## Architecture Overall Goals
+﻿## Architecture To-do
 
-- [] Move the copy and replace logic out of the Assembly Class and into a module in the main program
-- [] Make a frame class that handles generating and replacing ids for frames.
-- [] Make a bolted connection class
+- [x] Move the copy and replace logic out of the Assembly Class and into a module in the main program
+- [x] Make a frame class that handles generating and replacing ids for frames.
+- [] Make a bolted connection class that handles the file path logic
+- [] Try to get frame copying to happen without having to press buttons in Inventor
+	- a good place to start would be to see if we actually need to open the frame assembly (not the frame parent assembly) to replace it's component
 
 ### Importing Strategy
 1.	Read "root assembly document" and create an assembly occurrence with necessary input data
