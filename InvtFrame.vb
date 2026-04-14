@@ -14,6 +14,11 @@ Friend Class InvtFrame
 
     Private _oSkeletonID As String
     Private _nSkeletonID As String
+    Private _oSkelAtriValue As String
+    Private _nSkelAtriValue As String
+    Private _oSkelOcc As Inventor.ComponentOccurrence = Nothing
+    Private _nSkelOcc As Inventor.ComponentOccurrence
+    Private _oSkelPart As InvtPart = Nothing
     Private _parentAssemblyName As String 'needed for making root directory
 
     ''' <summary>
@@ -27,12 +32,28 @@ Friend Class InvtFrame
         _parentAssemblyName = parentAssemblyName
         'now we do the frame specific setup
 
-        SetSkeletonIDs(_frameAssemblyObject.OriginalComponentOccurrence)
+        'SetSkeletonIDs(_frameAssemblyObject.OriginalComponentOccurrence)
+        ConfigFrameAttributes(_frameAssemblyObject.OriginalComponentOccurrence)
 
+        'generates a random frame name
         GenerateNewFrameName()
 
         'change the file paths for the frame along with its sub components to be stored in the "Frame" directory
         ChangeRootDirectory(_frameAssemblyObject.NewRootDirectory)
+
+        'find the frames skeleton occurrence
+        FindSkelOccurrence(_frameAssemblyObject.OriginalAsmDocument.ComponentDefinition.Occurrences)
+
+        'find skeleton part and remove it from the regular parts list
+        FindSkelPart(_oSkelOcc.Definition.Document)
+
+        If _oSkelOcc Is Nothing Then
+            Throw New Exception("Now Skeleton Occurrence Found")
+        End If
+
+        If _oSkelPart Is Nothing Then
+            Throw New Exception("No Skeleton Part Found")
+        End If
 
     End Sub
 
@@ -181,6 +202,27 @@ Friend Class InvtFrame
             Return _nSkeletonID
         End Get
     End Property
+
+    ''' <summary>
+    ''' The original attribute value for frame.skeletons attribute
+    ''' </summary>
+    ''' <returns></returns>
+    ReadOnly Property OriginalSkeletonAttributeValue As String
+        Get
+            Return _oSkelAtriValue
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' The new attribute value for frame.skeletons attribute
+    ''' </summary>
+    ''' <returns></returns>
+    ReadOnly Property NewSkeletonAttributeValue As String
+        Get
+            Return _nSkelAtriValue
+        End Get
+    End Property
+
     ''' <summary>
     ''' This gives access to the core InvtAssembly object that is being used to store the frame assembly information. 
     ''' </summary>
@@ -188,6 +230,28 @@ Friend Class InvtFrame
     ReadOnly Property CoreAssemblyObject As InvtAssembly
         Get
             Return _frameAssemblyObject
+        End Get
+    End Property
+
+    ReadOnly Property OrigSkelOccurrence As Inventor.ComponentOccurrence
+        Get
+            Return _oSkelOcc
+        End Get
+    End Property
+
+    ReadOnly Property NewSkelOccurrence As Inventor.ComponentOccurrence
+        Get
+            Return _nSkelOcc
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' 
+    ''' </summary>
+    ''' <returns>The InvtPart Object for the original skeleton</returns>
+    ReadOnly Property OriginalSkeletonPart As InvtPart
+        Get
+            Return _oSkelPart
         End Get
     End Property
 
@@ -235,17 +299,15 @@ Friend Class InvtFrame
 
     '******Private Functions
 #Region "Frame Specific Functions"
-
     ''' <summary>
-    ''' Sets the original and new skeleton IDs for the frame assembly. The skeleton IDs are stored in the frame assembly occurrence attributes under "Frame.Skeletons". We need to get the original skeleton ID from there and then generate a new skeleton ID to use when we update the frame assembly occurrence attributes during the copy process.
+    ''' Sets the value for the original attribute sets, replaces the skeleton id in the attributes and then sets that
+    ''' as the new attribute set
     ''' </summary>
-    ''' <param name="frmOcc"></param>
-    Private Sub SetSkeletonIDs(ByRef frmOcc As Inventor.ComponentOccurrence)
-        'search through the frame occurrence definition attributes for the skeleton id and store it as the original skeleton id,
-        'then generate a new skeleton id and store it
+    Private Sub ConfigFrameAttributes(ByRef frmOcc As Inventor.ComponentOccurrence)
         For Each attSet As Inventor.AttributeSet In frmOcc.Definition.AttributeSets
             For Each atri As Inventor.Attribute In attSet
                 If atri.Name = "Frame.Skeletons" Then
+                    _oSkelAtriValue = atri.Value
                     Dim atriVal As String = atri.Value
                     'the integer value for the start of the skeleton id in the atribute value string
                     Dim skelIDStartInt As Integer = GetSkelIdStartInt(atriVal)
@@ -253,10 +315,13 @@ Friend Class InvtFrame
                     Dim skelIDEndInt As Integer = GetSkelIdEndInt(atriVal, skelIDStartInt)
                     _oSkeletonID = atriVal.Substring(skelIDStartInt, skelIDEndInt - skelIDStartInt)
                     _nSkeletonID = GenerateNewID(_oSkeletonID)
+
+                    _nSkelAtriValue = atriVal.Substring(0, skelIDStartInt) & _nSkeletonID & atriVal.Substring(skelIDEndInt, atriVal.Length - skelIDEndInt)
                 End If
             Next
         Next
     End Sub
+
 
     ''' <summary>
     ''' Get the integer for the start of the skeleton id in the frame assembly attribute value
@@ -330,12 +395,31 @@ Friend Class InvtFrame
         _frameAssemblyObject.NewName = nFrameName
     End Sub
 
-    Private Sub SetFrameRootDirectory()
-        'the root directory that was set for the core assembly object during setup
-        Dim assemblyRootDirectory = _frameAssemblyObject.NewRootDirectory
-        'frames are stored in a subdirectory based on their parent assembly name
-        _frameAssemblyObject.ChangeRootDirectory(assemblyRootDirectory & _parentAssemblyName & "\Frame\")
+    Private Sub FindSkelOccurrence(ByRef frmOccs As Inventor.ComponentOccurrences)
+        Dim skeletonOcc As ComponentOccurrence = Nothing
+        For Each occ As ComponentOccurrence In frmOccs
+            For Each attSet In occ.AttributeSets
+                For Each ati As Attribute In attSet
+                    If ati.Name = "Type" Then
+                        If ati.Value = "SkeletonType" Then
+                            _oSkelOcc = occ
+                            Debug.WriteLine("Skel Occ Found")
+                        End If
+                    End If
+                Next
+            Next
+        Next
     End Sub
+
+    Private Sub FindSkelPart(ByRef skelDoc As Inventor.PartDocument)
+        For Each part As InvtPart In _frameAssemblyObject.PartList
+            If part.OriginalFullFileName = skelDoc.FullFileName Then
+                _oSkelPart = part
+                Debug.Write("Skel Part Found")
+            End If
+        Next
+    End Sub
+
 
 #End Region
     '******************************

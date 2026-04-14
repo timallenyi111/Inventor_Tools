@@ -103,13 +103,17 @@ Friend Class AssemblyCopyToolForm
         TV_nComponent.Nodes.Add(rootAssemblyObject.TreeNode)
 
 
-
         sw.Stop()
         Debug.WriteLine("Form Load Time: " & sw.ElapsedMilliseconds & " ms")
     End Sub
 
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
-        highlightSet.Clear()
+        Try
+            highlightSet.Clear()
+        Catch ex As Exception
+
+        End Try
+
         MyBase.OnFormClosing(e)
         If EnableLog Then
             Log("Closing log file.")
@@ -230,7 +234,8 @@ Friend Class AssemblyCopyToolForm
 #Region "Button Clicks"
 
     Private Sub CopyButton_Click(sender As Object, e As EventArgs) Handles CopyButton.Click
-        CopyButtonHandler(Me, rootAssemblyObject, _invApp, sender, e)
+        'CopyButtonHandler(Me, rootAssemblyObject, _invApp, sender, e)
+        CopyAndReplace(rootAssemblyObject, Me, _invApp)
     End Sub
 
     Private Sub NewDirButton_Click(sender As Object, e As EventArgs) Handles newDirButton.Click

@@ -46,7 +46,7 @@ Module InitialSetupFunctions
         AssignNodeTags(rootAssemblyObject, parentIsRoot:=True)
 
         'log the results of the initial setup
-        LogAssembly(rootAssemblyObject, isRoot:=True)
+        LogAssembly(rootAssemblyObject, isRoot:=True, startingMessage:="*****INITIAL SETUP*****")
 
         Return rootAssemblyObject
     End Function
@@ -76,20 +76,18 @@ Module InitialSetupFunctions
                 If CheckIfOccurenceIsFrame(curOcc) Then
                     'this is a frame assembly                    
                     'create an InvtAssembly object for setting up a new InvtFrame Object
-                    Dim newFrameAssemblyObject As InvtAssembly = SetupFrameAssembly(curOcc, parentAsmObject.TreeNode, curOccIndex)
+                    Dim newFrameAssemblyObject As InvtAssembly = SetupFrameCoreAssembly(curOcc, parentAsmObject.TreeNode, curOccIndex)
                     'now create the new frame object using the new frame assembly object
                     Dim newFrameObject As New InvtFrame(newFrameAssemblyObject, parentAsmObject.NewName)
 
                     'now add the frame object to the SubFrameList
                     parentAsmObject.AddSubFrameToList(newFrameObject)
-
                 Else
                     'this is a regular assembly
                     Dim newSubAsy As InvtAssembly = SetupSubAssembly(curOcc, parentAsmObject.TreeNode, curOccIndex)
 
                     'add new subassembly to the subassembly list
                     parentAsmObject.AddSubAssemblyToList(newSubAsy)
-
                 End If
             Else
                 '_form.Log(curOcc._DisplayName & " was a duplicate", numTabs:=_logTab)
@@ -142,7 +140,7 @@ Module InitialSetupFunctions
     ''' <param name="frameOcc"></param>
     ''' <param name="ParentAssemblyNode"></param>
     ''' <returns></returns>
-    Private Function SetupFrameAssembly(ByRef frameOcc As Inventor.ComponentOccurrence, ByRef ParentAssemblyNode As TreeNode, ByRef occIndex As Integer) As InvtAssembly
+    Private Function SetupFrameCoreAssembly(ByRef frameOcc As Inventor.ComponentOccurrence, ByRef ParentAssemblyNode As TreeNode, ByRef occIndex As Integer) As InvtAssembly
         Dim frameDoc As Inventor.AssemblyDocument = frameOcc.Definition.Document
         Dim newAssemblyObject As New InvtAssembly(frameDoc, occIndex, nRootDirectory:=_NewRootDirectory, AsyOcc:=frameOcc)
         newAssemblyObject.TreeNode = ParentAssemblyNode.Nodes.Add(newAssemblyObject.NewName)
@@ -250,8 +248,6 @@ Module InitialSetupFunctions
 
     End Sub
 
-#Region "Logging Functions"
-
     ''' <summary>
     ''' Creates a new root directory for the copied assembly based on the project directory and the name of the root assembly. The new root directory will be used as the base file path for all copied components in the structure, so it is important that this is set correctly before any names or file paths are changed. The new root directory is set to be a folder with the same name as the root assembly in the project directory. For example, if the project directory is "C:\Projects\MyProject\" and the root assembly name is "MyAssembly.iam" then the new root directory will be set to "C:\Projects\MyProject\MyAssembly\".
     ''' </summary>
@@ -270,23 +266,28 @@ Module InitialSetupFunctions
         Return NewRootDirectory
     End Function
 
-    Private Sub LogAssembly(ByRef parentAsmObj As InvtAssembly, Optional ByRef tabIndex As Integer = 0, Optional ByRef isRoot As Boolean = False)
+#Region "Logging Functions"
+
+    Public Sub LogAssembly(ByRef parentAsmObj As InvtAssembly, Optional ByRef tabIndex As Integer = 0, Optional ByRef isRoot As Boolean = False,
+                            Optional startingMessage As String = "")
         If isRoot Then
             'this is the root assembly
-            _form.Log("****INITIAL SETUP SUMMARY****", numLinesBefore:=3)
-            _form.Log("New Root Directory: " & _NewRootDirectory)
-            _form.Log("Original Root Assembly Name: " & parentAsmObj.OriginalName)
-            _form.Log("New Root Assembly Name: " & parentAsmObj.NewName)
-            _form.Log("Original Root Assembly Full File Name: " & RemoveRootDirectory(parentAsmObj.OriginalFullFileName))
-            _form.Log("New Root Assembly Full File Name: " & RemoveRootDirectory(parentAsmObj.NewFullFileName))
+            _form.Log(startingMessage, numLinesBefore:=3, debugWrite:=False)
+            _form.Log("New Root Directory: " & _NewRootDirectory, debugWrite:=False)
+            _form.Log("Original Root Assembly Name: " & parentAsmObj.OriginalName, debugWrite:=False)
+            _form.Log("New Root Assembly Name: " & parentAsmObj.NewName, debugWrite:=False)
+            _form.Log("Original Root Assembly Full File Name: " & RemoveRootDirectory(parentAsmObj.OriginalFullFileName), debugWrite:=False)
+            _form.Log("New Root Assembly Full File Name: " & RemoveRootDirectory(parentAsmObj.NewFullFileName), debugWrite:=False)
             'increase the tab index for subcomponents
             tabIndex += 1
         Else
-            _form.Log("*ASSEMBLY*", numLinesBefore:=1, numTabs:=tabIndex)
-            _form.Log("New Assembly Name: " & parentAsmObj.NewName, numTabs:=tabIndex)
-            _form.Log("Original Assembly Full File Name: " & RemoveRootDirectory(parentAsmObj.OriginalFullFileName), numTabs:=tabIndex)
-            _form.Log("New Full File Name: " & RemoveRootDirectory(parentAsmObj.NewFullFileName), numTabs:=tabIndex)
-            _form.Log("Number of Duplicate Occurrences: " & parentAsmObj.DuplicateOccurrences.Count, numTabs:=tabIndex + 1)
+            _form.Log("*ASSEMBLY*", numLinesBefore:=1, numTabs:=tabIndex, debugWrite:=False)
+            _form.Log("New Assembly Name: " & parentAsmObj.NewName, numTabs:=tabIndex, debugWrite:=False)
+            _form.Log("Original Assembly Full File Name: " & RemoveRootDirectory(parentAsmObj.OriginalFullFileName), numTabs:=tabIndex, debugWrite:=False)
+            _form.Log("New Full File Name: " & RemoveRootDirectory(parentAsmObj.NewFullFileName), numTabs:=tabIndex, debugWrite:=False)
+            _form.Log("Number of Duplicate Occurrences: " & parentAsmObj.DuplicateOccurrences.Count, numTabs:=tabIndex + 1, debugWrite:=False)
+            _form.Log("Copy Enabled: " & parentAsmObj.CopyEnabled.ToString(), numTabs:=tabIndex + 1, debugWrite:=False)
+
             'increase the tab index for subcomponents
             tabIndex += 1
         End If
@@ -301,33 +302,40 @@ Module InitialSetupFunctions
             LogFrameAssembly(subFrame, tabIndex)
         Next
 
-        _form.Log("****Initial Setup Complete!****", numLinesAfter:=3, numLinesBefore:=1)
+        _form.Log("****Initial Setup Complete!****", numLinesAfter:=3, numLinesBefore:=1, debugWrite:=False)
 
     End Sub
 
     Private Sub LogPart(ByRef part As InvtPart, ByRef tabIndex As Integer)
         If part.IsContentCenter Then
-            _form.Log("*CONTENT CENTER PART*", numTabs:=tabIndex, numLinesBefore:=1)
-            _form.Log("Part Name: " & part.OriginalName, numTabs:=tabIndex)
-            _form.Log("Number of Duplicate Occurrences: " & part.DuplicateOccurrences.Count, numTabs:=tabIndex + 1)
+            _form.Log("*CONTENT CENTER PART*", numTabs:=tabIndex, numLinesBefore:=1, debugWrite:=False)
+            _form.Log("Part Name: " & part.OriginalName, numTabs:=tabIndex, debugWrite:=False)
+            _form.Log("Number of Duplicate Occurrences: " & part.DuplicateOccurrences.Count, numTabs:=tabIndex + 1, debugWrite:=False)
         Else
-            _form.Log("*PART*", numTabs:=tabIndex, numLinesBefore:=1)
-            _form.Log("New Part Name: " & part.NewName, numTabs:=tabIndex)
-            _form.Log("Original Part Full File Name: " & RemoveRootDirectory(part.OriginalFullFileName), numTabs:=tabIndex)
-            _form.Log("New Part Full File Name: " & RemoveRootDirectory(part.NewFullFileName), numTabs:=tabIndex)
-            _form.Log("Number of Duplicate Occurrences: " & part.DuplicateOccurrences.Count, numTabs:=tabIndex + 1)
+            _form.Log("*PART*", numTabs:=tabIndex, numLinesBefore:=1, debugWrite:=False)
+            _form.Log("New Part Name: " & part.NewName, numTabs:=tabIndex, debugWrite:=False)
+            _form.Log("Original Part Full File Name: " & RemoveRootDirectory(part.OriginalFullFileName), numTabs:=tabIndex, debugWrite:=False)
+            _form.Log("New Part Full File Name: " & RemoveRootDirectory(part.NewFullFileName), numTabs:=tabIndex, debugWrite:=False)
+            _form.Log("Number of Duplicate Occurrences: " & part.DuplicateOccurrences.Count, numTabs:=tabIndex + 1, debugWrite:=False)
+            _form.Log("Copy Enabled: " & part.CopyEnabled.ToString(), numTabs:=tabIndex + 1, debugWrite:=False)
         End If
     End Sub
 
     Private Sub LogFrameAssembly(ByRef parentFrameObj As InvtFrame, ByRef tabIndex As Integer)
-        _form.Log("*FRAME ASSEMBLY*", numTabs:=tabIndex, numLinesBefore:=1)
-        _form.Log("Original Frame Name: " & parentFrameObj.OriginalName, numTabs:=tabIndex)
-        _form.Log("New Frame Name: " & parentFrameObj.NewName, numTabs:=tabIndex)
-        _form.Log("Original Frame Assembly Full File Name: " & RemoveRootDirectory(parentFrameObj.OriginalFullFileName), numTabs:=tabIndex)
-        _form.Log("New Frame Assembly Full File Name: " & RemoveRootDirectory(parentFrameObj.NewFullFileName), numTabs:=tabIndex)
-        _form.Log("Original Frame Skeleton ID: " & parentFrameObj.OriginalSkeletonID, numTabs:=tabIndex)
-        _form.Log("New Frame Skeleton ID: " & parentFrameObj.NewSkeletonID, numTabs:=tabIndex)
-        _form.Log("Number of Duplicate Occurrences: " & parentFrameObj.DuplicateOccurrences.Count, numTabs:=tabIndex + 1)
+        _form.Log("*FRAME ASSEMBLY*", numTabs:=tabIndex, numLinesBefore:=1, debugWrite:=False)
+        _form.Log("Original Frame Name: " & parentFrameObj.OriginalName, numTabs:=tabIndex, debugWrite:=False)
+        _form.Log("New Frame Name: " & parentFrameObj.NewName, numTabs:=tabIndex, debugWrite:=False)
+        _form.Log("Original Frame Assembly Full File Name: " & RemoveRootDirectory(parentFrameObj.OriginalFullFileName), numTabs:=tabIndex, debugWrite:=False)
+        _form.Log("New Frame Assembly Full File Name: " & RemoveRootDirectory(parentFrameObj.NewFullFileName), numTabs:=tabIndex, debugWrite:=False)
+        _form.Log("Original Frame Skeleton ID: " & parentFrameObj.OriginalSkeletonID, numTabs:=tabIndex, debugWrite:=False)
+        _form.Log("New Frame Skeleton ID: " & parentFrameObj.NewSkeletonID, numTabs:=tabIndex, debugWrite:=False)
+        _form.Log("Number of Duplicate Occurrences: " & parentFrameObj.DuplicateOccurrences.Count, numTabs:=tabIndex + 1, debugWrite:=False)
+        _form.Log("Copy Enabled: " & parentFrameObj.CopyEnabled.ToString(), numTabs:=tabIndex + 1, debugWrite:=False)
+        _form.Log("***Old Skeleton Attribute Value: ", numTabs:=tabIndex, debugWrite:=False)
+        _form.Log(parentFrameObj.OriginalSkeletonAttributeValue, numTabs:=tabIndex, debugWrite:=False)
+        _form.Log("***New Skeleton Attribute Value: ", numTabs:=tabIndex, debugWrite:=False)
+        _form.Log(parentFrameObj.NewSkeletonAttributeValue, numTabs:=tabIndex, debugWrite:=False)
+
         'increase the tab index for subcomponents
         tabIndex += 1
 

@@ -628,7 +628,6 @@ Friend Class AssemblyCopyObject
             'close the new assembly 
             _invApp.ActiveDocument.Close(True)
         End If
-
     End Sub
 
     Private Sub CopyFile(oFile As String, nFile As String)

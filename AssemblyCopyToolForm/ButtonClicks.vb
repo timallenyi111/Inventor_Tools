@@ -8,6 +8,8 @@ Module ButtonClicks
         'rootAssemblyObject.UpdateNewProperties()
         'rootAssemblyObject.CreateNewFiles(dryrun:=False)
 
+        'CopyAndReplace(rootAssemblyObject)
+
         'try closing the original assembly without saving to see if this fixes the platform replacement issue.
         invApp.ActiveDocument.Close(False)
 

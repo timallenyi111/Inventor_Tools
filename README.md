@@ -2,6 +2,7 @@
 
 - [] Move the copy and replace logic out of the Assembly Class and into a module in the main program
 - [] Make a frame class that handles generating and replacing ids for frames.
+- [] Make a bolted connection class
 
 ### Importing Strategy
 1.	Read "root assembly document" and create an assembly occurrence with necessary input data
@@ -9,6 +10,16 @@
 3. Create a frame occurrence for every frame generator file and store it in the assembly 
 4. Create an assembly occurrence for each assembly in the root assembly document and add it to the assembly occurrence
 5. Repeat steps 2-4 for each assembly occurrence created in step 4
+
+### Copy and Replace Strategy
+
+1. Copy all part files
+2. Copy all assemblies (not frames)
+3. Use the original frame assembly document to replace the skeleton part, skeleton part id, and frame attribute skeleton id, then save a copy
+4. Move all the way down the assembly tree to the lowest assembly and start replacing components working our way back up.
+
+
+
 
 ### Notes
 Frame Attributes:
