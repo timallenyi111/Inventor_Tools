@@ -47,6 +47,7 @@ Module InitialSetupFunctions
 
         'log the results of the initial setup
         LogAssembly(rootAssemblyObject, isRoot:=True, startingMessage:="*****INITIAL SETUP*****")
+        _form.Log("*****INITIAL SETUP COMPLETE*****", numLinesAfter:=3)
 
         Return rootAssemblyObject
     End Function
@@ -115,8 +116,8 @@ Module InitialSetupFunctions
 
         Dim newAssemblyObject As New InvtAssembly(assemblyDoc, occIndex, nRootDirectory:=_NewRootDirectory, AsyOcc:=assemblyOcc)
 
-        newAssemblyObject.NewName = newAssemblyObject.OriginalName ' For now.... we aren't changing the new names by default
         newAssemblyObject.TreeNode = ParentAssemblyNode.Nodes.Add(newAssemblyObject.NewName)
+        newAssemblyObject.NewName = newAssemblyObject.OriginalName ' For now.... we aren't changing the new names by default
 
         'setup all components in the subassembly
         'this is recursive so it will continue to go down the structure until there are no more subassemblies
@@ -257,26 +258,6 @@ Module InitialSetupFunctions
         Return NewRootDirectory
     End Function
 
-    Private Function IsBoltedConnection(ByRef compOcc As ComponentOccurrence) As Boolean
-        Dim boltedConnection As Boolean = False
-        If compOcc.AttributeSets.Count > 0 Then
-            For Each attSet As AttributeSet In compOcc.AttributeSets
-                If attSet.Name = "FDesign" Then
-                    For Each atri As Inventor.Attribute In attSet
-                        If VarType(atri.Value) = vbString Then
-                            Dim atriValue As String = atri.Value
-                            If atriValue.IndexOf("CABoltCon") >= 0 Then
-                                boltedConnection = True
-                                Debug.WriteLine(compOcc.Name & " is a bolted connection")
-                            End If
-                        End If
-                    Next
-                End If
-            Next
-        End If
-
-        Return boltedConnection
-    End Function
 
 #Region "Logging Functions"
 
@@ -290,7 +271,7 @@ Module InitialSetupFunctions
             _form.Log("New Root Assembly Name: " & parentAsmObj.NewName, debugWrite:=False)
             _form.Log("Original Root Assembly Full File Name: " & RemoveRootDirectory(parentAsmObj.OriginalFullFileName), debugWrite:=False)
             _form.Log("New Root Assembly Full File Name: " & RemoveRootDirectory(parentAsmObj.NewFullFileName), debugWrite:=False)
-            'increase the tab index for subcomponents
+
             tabIndex += 1
         Else
             _form.Log("*ASSEMBLY*", numLinesBefore:=1, numTabs:=tabIndex, debugWrite:=False)
@@ -300,7 +281,6 @@ Module InitialSetupFunctions
             _form.Log("Number of Duplicate Occurrences: " & parentAsmObj.DuplicateOccurrences.Count, numTabs:=tabIndex + 1, debugWrite:=False)
             _form.Log("Copy Enabled: " & parentAsmObj.CopyEnabled.ToString(), numTabs:=tabIndex + 1, debugWrite:=False)
 
-            'increase the tab index for subcomponents
             tabIndex += 1
         End If
 
@@ -314,8 +294,7 @@ Module InitialSetupFunctions
             LogFrameAssembly(subFrame, tabIndex)
         Next
 
-        _form.Log("****Initial Setup Complete!****", numLinesAfter:=3, numLinesBefore:=1, debugWrite:=False)
-
+        tabIndex -= 1
     End Sub
 
     Private Sub LogPart(ByRef part As InvtPart, ByRef tabIndex As Integer)
@@ -368,7 +347,7 @@ Module InitialSetupFunctions
     ''' <param name="path"></param>
     ''' <returns></returns>
     Private Function RemoveRootDirectory(ByRef path As String) As String
-        Dim newPath As String = "{PROJECT DIRECTORY}\" & path.Substring(_NewRootDirectory.Length)
+        Dim newPath As String = "{PROJECT DIRECTORY}\" & path.Substring(_ProjectDirectory.Length)
         Return newPath
     End Function
 

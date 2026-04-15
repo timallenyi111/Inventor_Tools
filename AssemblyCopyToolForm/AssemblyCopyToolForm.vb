@@ -440,13 +440,16 @@ Friend Class AssemblyCopyToolForm
     End Sub
 
     Sub AdjustRootDirectory()
-        If doubleClickNode.Text = rootAssemblyObject.NewName Then
-            'nothing needs to be done
-        Else
-            rootAssemblyObject.NewName = doubleClickNode.Text
-            TB_newDir.Text = rootAssemblyObject.NewRootDirectory
-            MoveCaret(TB_newDir)
-        End If
+        'If doubleClickNode.Text = rootAssemblyObject.NewName Then
+        '    'nothing needs to be done
+        'Else
+        '    rootAssemblyObject.NewName = doubleClickNode.Text
+        '    TB_newDir.Text = rootAssemblyObject.NewRootDirectory
+        '    MoveCaret(TB_newDir)
+        'End If
+        rootAssemblyObject.NewName = doubleClickNode.Text
+        TB_newDir.Text = rootAssemblyObject.NewRootDirectory
+        MoveCaret(TB_newDir)
     End Sub
 
 #End Region

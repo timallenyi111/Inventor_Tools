@@ -57,9 +57,9 @@
         End If
     End Sub
 
-    Public Sub ChangeRootDirectory(nRootDirectory)
-        _nRootDirectory = nRootDirectory
-    End Sub
+    'Public Sub UpdateSubCompRootDir(nRootDirectory)
+    '    _nRootDirectory = nRootDirectory
+    'End Sub
 
 #End Region
 
@@ -103,7 +103,11 @@
 
     Property NewName As String
         Get
-            Return _nPartName
+            If _treeNode Is Nothing Then
+                Return _nPartName
+            Else
+                Return _treeNode.Text
+            End If
         End Get
         Set(value As String)
             _nPartName = value
@@ -130,10 +134,13 @@
         End Get
     End Property
 
-    ReadOnly Property NewRootDirectory As String
+    Property NewRootDirectory As String
         Get
             Return _nRootDirectory
         End Get
+        Set(value As String)
+            _nRootDirectory = value
+        End Set
     End Property
 
     ReadOnly Property IsContentCenter As Boolean
@@ -160,6 +167,9 @@
 
     Property CopyEnabled As Boolean
         Get
+            If _treeNode.ForeColor = System.Drawing.Color.Red Then
+                _enableCopy = False
+            End If
             Return _enableCopy
         End Get
         Set(value As Boolean)

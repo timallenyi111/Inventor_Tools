@@ -17,7 +17,6 @@ Friend Class InvtFrame
     Private _oSkelAtriValue As String
     Private _nSkelAtriValue As String
     Private _oSkelOcc As Inventor.ComponentOccurrence = Nothing
-    Private _nSkelOcc As Inventor.ComponentOccurrence
     Private _oSkelPart As InvtPart = Nothing
     Private _parentAssemblyName As String 'needed for making root directory
 
@@ -29,7 +28,7 @@ Friend Class InvtFrame
     Public Sub New(ByRef InvtAssemblyObject As InvtAssembly, ByRef parentAssemblyName As String)
         'setup a sub assembly object to represent the frame assembly
         _frameAssemblyObject = InvtAssemblyObject
-        _parentAssemblyName = parentAssemblyName
+        '_parentAssemblyName = parentAssemblyName
         'now we do the frame specific setup
 
         'SetSkeletonIDs(_frameAssemblyObject.OriginalComponentOccurrence)
@@ -110,10 +109,14 @@ Friend Class InvtFrame
             Return _frameAssemblyObject.NewFullFileName
         End Get
     End Property
-    ReadOnly Property NewRootDirectory As String
+
+    Property NewRootDirectory As String
         Get
             Return _frameAssemblyObject.NewRootDirectory
         End Get
+        Set(value As String)
+            ChangeRootDirectory(value)
+        End Set
     End Property
 
     Property SubType As String
@@ -239,12 +242,6 @@ Friend Class InvtFrame
         End Get
     End Property
 
-    ReadOnly Property NewSkelOccurrence As Inventor.ComponentOccurrence
-        Get
-            Return _nSkelOcc
-        End Get
-    End Property
-
     ''' <summary>
     ''' 
     ''' </summary>
@@ -262,17 +259,17 @@ Friend Class InvtFrame
 #Region "Public Functions"
     Sub AddPartToList(ByRef part As InvtPart)
         'first we have to set the part root directory to the frame
-        part.ChangeRootDirectory(_frameAssemblyObject.NewRootDirectory)
+        part.NewRootDirectory = _frameAssemblyObject.NewRootDirectory
         _frameAssemblyObject.AddPartToList(part)
     End Sub
 
     Sub AddSubAssemblyToList(ByRef asy As InvtAssembly)
-        asy.ChangeRootDirectory(_frameAssemblyObject.NewRootDirectory)
+        asy.NewRootDirectory = _frameAssemblyObject.NewRootDirectory
         _frameAssemblyObject.AddSubAssemblyToList(asy)
     End Sub
 
     Sub AddSubFrameToList(ByRef frame As InvtFrame)
-        frame.ChangeRootDirectory(_frameAssemblyObject.NewRootDirectory)
+        frame.NewRootDirectory = _frameAssemblyObject.NewRootDirectory
         _frameAssemblyObject.AddSubFrameToList(frame)
     End Sub
 
@@ -281,18 +278,25 @@ Friend Class InvtFrame
     ''' </summary>
     ''' <param name="inputRootDirectory"></param>
     Sub ChangeRootDirectory(ByRef inputRootDirectory As String)
-        Dim newRootDirectory As String = inputRootDirectory & _parentAssemblyName & "\Frame\"
-        _frameAssemblyObject.ChangeRootDirectory(newRootDirectory)
-        For Each part As InvtPart In PartList
-            part.ChangeRootDirectory(newRootDirectory)
-        Next
-        For Each asy As InvtAssembly In AssemblyList
-            asy.ChangeRootDirectory(newRootDirectory)
-        Next
-        For Each frame As InvtFrame In FrameList
-            frame.ChangeRootDirectory(newRootDirectory)
-        Next
+        If _frameAssemblyObject.TreeNode.Parent Is Nothing Then
+            Throw New Exception("THE PARENT TREE NODE OF THE FRAME DOESN'T EXIST YET, SO THE FRAME ROOT DIRECTORY CAN'T BE SET")
+        End If
+        If _frameAssemblyObject.TreeNode.Parent.Text = "" Then
+            Throw New Exception("THE PARENT TREE NODE DOESN'T HAVE ANY TEXT")
+        End If
 
+        Dim newRootDirectory As String = inputRootDirectory & _frameAssemblyObject.TreeNode.Parent.Text & "\Frame\"
+
+        _frameAssemblyObject.NewRootDirectory = newRootDirectory
+        'For Each part As InvtPart In PartList
+        '    part.NewRootDirectory = newRootDirectory
+        'Next
+        'For Each asy As InvtAssembly In AssemblyList
+        '    asy.NewRootDirectory = newRootDirectory
+        'Next
+        'For Each frame As InvtFrame In FrameList
+        '    frame.NewRootDirectory = newRootDirectory
+        'Next
     End Sub
 
 #End Region
@@ -404,6 +408,7 @@ Friend Class InvtFrame
                         If ati.Value = "SkeletonType" Then
                             _oSkelOcc = occ
                             Debug.WriteLine("Skel Occ Found")
+                            Exit Sub
                         End If
                     End If
                 Next
@@ -416,6 +421,7 @@ Friend Class InvtFrame
             If part.OriginalFullFileName = skelDoc.FullFileName Then
                 _oSkelPart = part
                 Debug.Write("Skel Part Found")
+                Exit Sub
             End If
         Next
     End Sub

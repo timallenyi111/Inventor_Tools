@@ -22,15 +22,17 @@ Module CopyAndReplaceFunctions
     ''' </summary>
     ''' <param name="rootAssemblyObject"></param>
     Public Sub CopyAndReplace(ByRef rootAssemblyObject As InvtAssembly, ByRef form As AssemblyCopyToolForm, app As Inventor.Application)
-
         _form = form
         _app = app
-        UpdateComponentProperties(rootAssemblyObject)
+
+        rootAssemblyObject.NewRootDirectory = _form.TB_newDir.Text
 
         LogAssembly(rootAssemblyObject, isRoot:=True, startingMessage:="*****UPDATED PROPERTIES*****")
 
-        'used if the user cancels the copy process because they didn't want to overwrite existing files
-        Dim processCancled As Boolean = False
+        If Directory.Exists(rootAssemblyObject.NewRootDirectory) Then
+            MessageBox.Show("A directory that matches the 'New Directory' already exists, the copy request will be cancled.", "COPY REQUEST ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Exit Sub
+        End If
 
         'copy the root assembly document
         _app.ActiveDocument.SaveAs(rootAssemblyObject.NewFullFileName, True)
@@ -44,7 +46,7 @@ Module CopyAndReplaceFunctions
         Dim newRootAsmDoc As AssemblyDocument = OpenAssemblyDocument(rootAssemblyObject.NewFullFileName, True)
 
         'copy all of the necessary files
-        processCancled = CreateNewFiles(rootAssemblyObject)
+        CreateNewFiles(rootAssemblyObject)
         _form.Log("*****FILE COPY COMPLETE*****", numLinesAfter:=3)
 
         _form.Log("*****STARTING TO REPLACE FILES*****", numLinesBefore:=3)
@@ -55,39 +57,6 @@ Module CopyAndReplaceFunctions
         newRootAsmDoc.Save2()
 
         MessageBox.Show("Copy Complete")
-
-    End Sub
-
-    ''' <summary>
-    ''' 'updates the component properties of the Invt Components that have been changed by the user
-    ''' since the initial setup during load.
-    ''' (HANDLES ASSEMBLIES, FRAMES, AND PARTS)
-    ''' </summary>
-    Private Sub UpdateComponentProperties(ByRef invtObject As Object)
-        Dim tNode As TreeNode = invtObject.TreeNode
-        'tree node forecolor gets changed to red if the user selects the "do not copy" option
-        If tNode.ForeColor = System.Drawing.Color.Red Then
-            invtObject.CopyEnabled = False
-        End If
-
-        'when the user changes the assembly name by changing the treenode text
-        invtObject.NewName = tNode.Text
-
-        If TypeOf (invtObject) Is InvtPart Then
-            'do nothing because parts don't have subcomponents
-        Else
-            'update sub-components
-            For Each part As InvtPart In invtObject.PartList
-                UpdateComponentProperties(part)
-            Next
-            For Each asm As InvtAssembly In invtObject.AssemblyList
-                UpdateComponentProperties(asm)
-            Next
-            For Each frm As InvtFrame In invtObject.FrameList
-                UpdateComponentProperties(frm)
-            Next
-        End If
-
     End Sub
 
     ''' <summary>
@@ -97,14 +66,7 @@ Module CopyAndReplaceFunctions
     ''' <param name="parentAssembly"></param>
     ''' <param name="isRoot"></param>
     ''' <returns>True if the user canceled the operation to avoid overwriting existing files</returns>
-    Private Function CreateNewFiles(ByRef parentAssembly As InvtAssembly) As Boolean
-        'used to end the copy process if the user decides to no overwrite files
-        Dim endProcess As Boolean = False
-
-        If endProcess Then
-            Return endProcess
-        End If
-
+    Private Sub CreateNewFiles(ByRef parentAssembly As InvtAssembly)
         For Each part As InvtPart In parentAssembly.PartList
             If part.CopyEnabled Then
                 If part.IsContentCenter Then
@@ -113,15 +75,11 @@ Module CopyAndReplaceFunctions
                 Else
                     _form.Log("Copying: " & part.OriginalFullFileName, numLinesBefore:=1)
                     _form.Log("To: " & part.NewFullFileName)
-                    endProcess = CopyFile(part.OriginalFullFileName, part.NewFullFileName)
-                End If
-                If endProcess Then
-                    Return endProcess
+                    CopyFile(part.OriginalFullFileName, part.NewFullFileName)
                 End If
             Else
                 _form.Log(part.OriginalName & " skipped because copy is disabled*", numLinesBefore:=1)
             End If
-
         Next
 
         For Each subAsm As InvtAssembly In parentAssembly.AssemblyList
@@ -131,13 +89,9 @@ Module CopyAndReplaceFunctions
                 Else
                     _form.Log("Copying: " & subAsm.OriginalFullFileName, numLinesBefore:=1)
                     _form.Log("To: " & subAsm.NewFullFileName)
-                    'make a copy of this sub assembly
-                    endProcess = CopyFile(subAsm.OriginalFullFileName, subAsm.NewFullFileName)
+                    CopyFile(subAsm.OriginalFullFileName, subAsm.NewFullFileName)
                     'send the sub assembly to have all of it's components copied
-                    endProcess = CreateNewFiles(subAsm)
-                    If endProcess Then
-                        Return endProcess
-                    End If
+                    CreateNewFiles(subAsm)
                 End If
             Else
                 _form.Log(subAsm.OriginalName & " skipped because copy is disabled*", numLinesBefore:=1)
@@ -152,20 +106,17 @@ Module CopyAndReplaceFunctions
                     _form.Log("Copying: " & subFrm.OriginalFullFileName, numLinesBefore:=1)
                     _form.Log("To: " & subFrm.NewFullFileName)
                     'save a copy of the sub frame
-                    endProcess = CopyFile(subFrm.OriginalFullFileName, subFrm.NewFullFileName)
+                    CopyFile(subFrm.OriginalFullFileName, subFrm.NewFullFileName)
                     'send the sub frame to have all of it's components copied
-                    endProcess = CreateNewFiles(subFrm.CoreAssemblyObject)
-                    If endProcess Then
-                        Return endProcess
-                    End If
+                    CreateNewFiles(subFrm.CoreAssemblyObject)
                 End If
             Else
                 _form.Log(subFrm.OriginalName & " skipped because copy is disabled*", numLinesBefore:=1)
             End If
         Next
 
-        Return endProcess
-    End Function
+
+    End Sub
 
     ''' <summary>
     ''' Copies the input files from the original file name to the new file name.
@@ -173,10 +124,7 @@ Module CopyAndReplaceFunctions
     ''' <param name="oFile"></param>
     ''' <param name="nFile"></param>
     ''' <returns>True if the user has canceled the operation to avoid overwriting files</returns>
-    Private Function CopyFile(oFile As String, nFile As String) As Boolean
-        'will be set to true if the user decides to cancel the copy operation
-        Dim endProcess As Boolean = False
-
+    Private Sub CopyFile(oFile As String, nFile As String)
         _form.Log("copying file: " & oFile)
         Dim nFilePath As String = nFile.Substring(0, nFile.LastIndexOf("\"))
         _form.Log("New File Path: " & nFilePath, numTabs:=1)
@@ -191,21 +139,19 @@ Module CopyAndReplaceFunctions
         If System.IO.File.Exists(nFile) Then
             '_form.Log("!!!!!!! FILE SKIPPED BECAUSE IT ALREADY EXISTS !!!!!!!")
             Dim result As DialogResult
-            result = MessageBox.Show(nFile & " Already Exists", "Yes = Continue and overwrite all existing files \n No = Cancel the copy operation",
+            result = MessageBox.Show(nFile & " Already Exists. This could mean that this component is used in a different sub-assembly or there are 2 files with identical names. Overwrite the existing file?", "IDENTICAL FILE NAMES",
                                      MessageBoxButtons.YesNo)
             If result = DialogResult.Yes Then
                 System.IO.File.Copy(oFile, nFile, True)
             Else
-                endProcess = True
+
             End If
         Else
             System.IO.File.Copy(oFile, nFile, False)
             _form.Log("COPY SUCCESSFUL", numTabs:=1, numLinesAfter:=1)
             _form.LB_CopyComplete.Text = "Saving File: " & nFile
         End If
-
-        Return endProcess
-    End Function
+    End Sub
 
     Private Sub CopyFrameParent(ByVal parentAsmObj As InvtAssembly)
         'send the frame parent to have all of its components saved.
@@ -253,12 +199,6 @@ Module CopyAndReplaceFunctions
                 Next
             Next
 
-            'replace the skeleton occurrence
-            _form.Log("Replacing Skeleton Occurrence:", numLinesBefore:=1)
-            _form.Log("Original: " & frameObj.OriginalSkeletonPart.OriginalFullFileName)
-            _form.Log("New: " & frameObj.OriginalSkeletonPart.NewFullFileName)
-            skelOcc.Replace(frameObj.OriginalSkeletonPart.NewFullFileName, True)
-
             'save a copy of the original parent assembly document as the new document.
             _form.Log("Saving new frame parent assembly", numLinesBefore:=1)
             _form.Log(parentAsmObj.NewFullFileName)
@@ -274,12 +214,6 @@ Module CopyAndReplaceFunctions
                     End If
                 Next
             Next
-
-            'chnage the skeleton occurrence back
-            _form.Log("Replacing Skeleton Occurrence Back to Original:", numLinesBefore:=1)
-            _form.Log("Original: " & frameObj.OriginalSkeletonPart.OriginalFullFileName)
-            _form.Log("New: " & frameObj.OriginalSkeletonPart.NewFullFileName)
-            skelOcc.Replace(frameObj.OriginalSkeletonPart.OriginalFullFileName, True)
 
             'change the skeleton occurrence id back to the original
             For Each attSet As AttributeSet In skelOcc.AttributeSets
@@ -315,9 +249,9 @@ Module CopyAndReplaceFunctions
             _form.Log("Opening: " & parentAsmObj.NewFullFileName, numLinesBefore:=1)
             _form.Log("Because it contains a frame")
             'we need to open this file to replace the frame
-            Dim nParentAsmDoc As AssemblyDocument = OpenAssemblyDocument(parentAsmObj.NewFullFileName, False)
-            parentCompOccs = nParentAsmDoc.ComponentDefinition.Occurrences
-            openedAsmFlag = True
+            'Dim nParentAsmDoc As AssemblyDocument = OpenAssemblyDocument(parentAsmObj.NewFullFileName, False)
+            'parentCompOccs = nParentAsmDoc.ComponentDefinition.Occurrences
+            'openedAsmFlag = True
         End If
 
         'replace the subassemblies first
@@ -329,6 +263,10 @@ Module CopyAndReplaceFunctions
                 'get the component occurrence that for the sub assembly
                 Dim compOcc As Inventor.ComponentOccurrence = parentCompOccs.Item(subAsm.OccurrenceIndex)
                 compOcc.Replace(subAsm.NewFullFileName, True)
+
+                If subAsm.OriginalName IsNot subAsm.NewName Then
+                    UpdatePartNumber(compOcc, subAsm)
+                End If
 
                 'now replace the components in the sub-assembly
                 ReplaceComponents(subAsm, compOcc.Definition.Occurrences)
@@ -351,6 +289,10 @@ Module CopyAndReplaceFunctions
                     _form.Log("With: " & subPart.NewName)
                     Dim compOcc As Inventor.ComponentOccurrence = parentCompOccs.Item(subPart.OccurrenceIndex)
                     compOcc.Replace(subPart.NewFullFileName, True)
+
+                    If subPart.OriginalName IsNot subPart.NewName Then
+                        UpdatePartNumber(compOcc, subPart)
+                    End If
                 End If
             End If
         Next
@@ -387,7 +329,39 @@ Module CopyAndReplaceFunctions
         'now replace the frame occurrence
         Dim frameOcc As ComponentOccurrence = parentDoc.ComponentDefinition.Occurrences.Item(frameObj.OccurrenceIndex)
         frameOcc.Replace(frameObj.NewFullFileName, True)
+
+        If frameObj.OriginalName IsNot frameObj.NewName Then
+            UpdatePartNumber(frameOcc, frameObj.CoreAssemblyObject)
+        End If
     End Sub
+
+    ''' <summary>
+    ''' Updates the iProperties "Part Number"
+    ''' </summary>
+    ''' <param name="curOcc"></param>
+    ''' <param name="component"></param>
+    ''' <param name="_invApp"></param>
+    Public Sub UpdatePartNumber(curOcc As ComponentOccurrence, component As Object)
+        If TypeOf component Is InvtPart Then
+            Dim part As InvtPart = CType(component, InvtPart)
+            'Dim replacedPartDoc As PartDocument = _invApp.Documents.ItemByName(part.NewFullFileName)
+            Dim replacedPartDoc As PartDocument = curOcc.Definition.Document
+            replacedPartDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = part.NewName
+            curOcc.Name = part.NewName
+            _form.Log("Updated Part Number for Part: " & part.NewName, numLinesBefore:=1)
+        ElseIf TypeOf component Is InvtAssembly Then
+            Dim subAsy As InvtAssembly = CType(component, InvtAssembly)
+            Dim replacedAsyDoc As AssemblyDocument = curOcc.Definition.Document
+            'Dim replacedAsyDoc As AssemblyDocument = _invApp.Documents.ite(subAsy.NewFullFileName)
+            replacedAsyDoc.PropertySets.Item("Design Tracking Properties").Item("Part Number").Value = subAsy.NewName
+            curOcc.Name = subAsy.NewName
+            _form.Log("Updated Part Number for Assembly: " & subAsy.NewName, numLinesBefore:=1)
+        Else
+            ' do nothing for other types
+            _form.Log("Component is neither InvtPartObj nor AssemblyCopyObject. No Part Number update performed.", numLinesBefore:=1)
+        End If
+    End Sub
+
 
     Private Function OpenAssemblyDocument(ByRef fileName As String, ByRef visibility As Boolean) As Inventor.AssemblyDocument
         Dim nameValueMap As Inventor.NameValueMap = _app.TransientObjects.CreateNameValueMap

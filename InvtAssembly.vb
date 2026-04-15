@@ -2,7 +2,7 @@
 Imports Inventor
 
 Friend Class InvtAssembly
-    Private _prtList As List(Of InvtPart)
+    Private _partList As List(Of InvtPart)
     Private _subAsyList As List(Of InvtAssembly)
     Private _subFrameList As List(Of InvtFrame)
     Private _oAsyName As String
@@ -46,7 +46,7 @@ Friend Class InvtAssembly
         End If
 
         'initialize all of the applicable lists
-        _prtList = New List(Of InvtPart)
+        _partList = New List(Of InvtPart)
         _subAsyList = New List(Of InvtAssembly)
         _subFrameList = New List(Of InvtFrame)
         duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
@@ -60,20 +60,28 @@ Friend Class InvtAssembly
     ''' </summary>
     Private Sub NameChange()
         Try
-            _nFullFileName = _nRootDirectory & _nAsyName & ".iam"
 
             ' rename the treeview node if the treeview has already been set up
             If _treeNode Is Nothing Then
                 'the tree node hasn't been set up yet, so we don't need to worry about changing the name there yet since it will be set to the new name when it is created
             Else
                 _treeNode.Text = _nAsyName
+                If _treeNode.Parent Is Nothing Then
+                    'this is the root so when the name changes, so does the root directory
+                    Dim lastIndex As Integer = _nRootDirectory.LastIndexOf("\")
+                    _nRootDirectory = _nRootDirectory.Substring(0, lastIndex)
+                    lastIndex = _nRootDirectory.LastIndexOf("\")
+                    _nRootDirectory = _nRootDirectory.Substring(0, lastIndex + 1) & _nAsyName & "\"
+                    UpdateSubCompRootDir()
+                End If
             End If
+
+            _nFullFileName = _nRootDirectory & _nAsyName & ".iam"
 
         Catch ex As Exception
             If _nRootDirectory Is Nothing Then
                 'throw an exception
                 Throw New Exception("Root directory is not set. Cannot change name until root directory is set.")
-
                 'in the future we could automate this by looking for a root directory instead of throwing an error, but for now this will just force the user to set the root directory before changing any names which will ensure that the file paths are correct when they change the name.
             Else
                 Throw New Exception("An error occurred while changing the name. " & ex.Message)
@@ -112,7 +120,21 @@ Friend Class InvtAssembly
         End If
     End Sub
 
-
+    ''' <summary>
+    ''' Used for passing the root directory down to sub components
+    ''' </summary>
+    ''' <param name="newRootDirectory"></param>
+    Private Sub UpdateSubCompRootDir()
+        For Each part As InvtPart In _partList
+            part.NewRootDirectory = _nRootDirectory
+        Next
+        For Each subAsm As InvtAssembly In _subAsyList
+            subAsm.NewRootDirectory = _nRootDirectory
+        Next
+        For Each subFrm As InvtFrame In _subFrameList
+            subFrm.NewRootDirectory = _nRootDirectory
+        Next
+    End Sub
 
 #End Region
 
@@ -125,7 +147,7 @@ Friend Class InvtAssembly
     ''' <param name="occurrenceIndex"></param>
     ''' <returns></returns>
     Function CheckForDuplicatePart(ByRef partOcc As ComponentOccurrence, ByRef occurrenceIndex As Integer) As Boolean
-        For Each prtObj As InvtPart In _prtList
+        For Each prtObj As InvtPart In _partList
             If prtObj.OriginalFullFileName = partOcc.Definition.Document.FullFileName Then
                 'this is a duplicate occurrence, so add it to the list of duplicates for this part object and return true
                 prtObj.DuplicateOccurrences.Add(partOcc)
@@ -149,7 +171,7 @@ Friend Class InvtAssembly
     End Function
 
     Sub AddPartToList(ByRef part As InvtPart)
-        _prtList.Add(part)
+        _partList.Add(part)
     End Sub
 
     Sub AddSubAssemblyToList(ByRef asy As InvtAssembly)
@@ -161,13 +183,7 @@ Friend Class InvtAssembly
         _containsFrame = True
     End Sub
 
-    ''' <summary>
-    ''' For changing the root directory after initial setup
-    ''' </summary>
-    ''' <param name="newRootDirectory"></param>
-    Sub ChangeRootDirectory(ByRef newRootDirectory As String)
-        _nRootDirectory = newRootDirectory
-    End Sub
+
 
 #End Region
 
@@ -203,7 +219,11 @@ Friend Class InvtAssembly
 
     Property NewName As String
         Get
-            Return _nAsyName
+            If _treeNode Is Nothing Then
+                Return _nAsyName
+            Else
+                Return _treeNode.Text
+            End If
         End Get
         Set(value As String)
             _nAsyName = value
@@ -235,10 +255,14 @@ Friend Class InvtAssembly
             End If
         End Get
     End Property
-    ReadOnly Property NewRootDirectory As String
+    Property NewRootDirectory As String
         Get
             Return _nRootDirectory
         End Get
+        Set(value As String)
+            _nRootDirectory = value
+            UpdateSubCompRootDir()
+        End Set
     End Property
 
     Property SubType As String
@@ -252,7 +276,7 @@ Friend Class InvtAssembly
 
     ReadOnly Property PartList As List(Of InvtPart)
         Get
-            Return _prtList
+            Return _partList
         End Get
     End Property
 
@@ -282,6 +306,9 @@ Friend Class InvtAssembly
 
     Property CopyEnabled As Boolean
         Get
+            If _treeNode.ForeColor = System.Drawing.Color.Red Then
+                _copyEnabled = False
+            End If
             Return _copyEnabled
         End Get
         Set(value As Boolean)

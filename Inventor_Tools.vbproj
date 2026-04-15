@@ -18,7 +18,6 @@
     <Compile Remove="OldCode\InvtAssemblyObj.vb" />
     <Compile Remove="OldCode\InvtComponentObj.vb" />
     <Compile Remove="OldCode\InvtFrameObj.vb" />
-    <Compile Remove="OldCode\InvtPartObj.vb" />
     <Compile Remove="OldCode\OldFunctions.vb" />
   </ItemGroup>
 
@@ -41,7 +40,6 @@
     <None Include="OldCode\InvtAssemblyObj.vb" />
     <None Include="OldCode\InvtComponentObj.vb" />
     <None Include="OldCode\InvtFrameObj.vb" />
-    <None Include="OldCode\InvtPartObj.vb" />
     <None Include="OldCode\OldFunctions.vb" />
   </ItemGroup>
 
