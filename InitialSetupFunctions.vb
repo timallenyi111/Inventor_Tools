@@ -71,22 +71,13 @@ Module InitialSetupFunctions
                 parentAsmObject.AddPartToList(newPart)
 
             ElseIf curOcc.DefinitionDocumentType = DocumentTypeEnum.kAssemblyDocumentObject And parentAsmObject.CheckForDuplicateAssembly(curOcc, curOccIndex) = False Then
-                'this is an assembly occurrence and not a duplicate
-                'now we need to check if this is a frame or a regular assembly.
                 If CheckIfOccurenceIsFrame(curOcc) Then
-                    'this is a frame assembly                    
-                    'create an InvtAssembly object for setting up a new InvtFrame Object
+                    'the core assembly object for the frame
                     Dim newFrameAssemblyObject As InvtAssembly = SetupFrameCoreAssembly(curOcc, parentAsmObject.TreeNode, curOccIndex)
-                    'now create the new frame object using the new frame assembly object
                     Dim newFrameObject As New InvtFrame(newFrameAssemblyObject, parentAsmObject.NewName)
-
-                    'now add the frame object to the SubFrameList
                     parentAsmObject.AddSubFrameToList(newFrameObject)
                 Else
-                    'this is a regular assembly
                     Dim newSubAsy As InvtAssembly = SetupSubAssembly(curOcc, parentAsmObject.TreeNode, curOccIndex)
-
-                    'add new subassembly to the subassembly list
                     parentAsmObject.AddSubAssemblyToList(newSubAsy)
                 End If
             Else
@@ -264,6 +255,27 @@ Module InitialSetupFunctions
 
         Dim NewRootDirectory = _ProjectDirectory & _form.TB_Prefix.Text & rootAssemblyName & _form.TB_Suffix.Text & "\"
         Return NewRootDirectory
+    End Function
+
+    Private Function IsBoltedConnection(ByRef compOcc As ComponentOccurrence) As Boolean
+        Dim boltedConnection As Boolean = False
+        If compOcc.AttributeSets.Count > 0 Then
+            For Each attSet As AttributeSet In compOcc.AttributeSets
+                If attSet.Name = "FDesign" Then
+                    For Each atri As Inventor.Attribute In attSet
+                        If VarType(atri.Value) = vbString Then
+                            Dim atriValue As String = atri.Value
+                            If atriValue.IndexOf("CABoltCon") >= 0 Then
+                                boltedConnection = True
+                                Debug.WriteLine(compOcc.Name & " is a bolted connection")
+                            End If
+                        End If
+                    Next
+                End If
+            Next
+        End If
+
+        Return boltedConnection
     End Function
 
 #Region "Logging Functions"

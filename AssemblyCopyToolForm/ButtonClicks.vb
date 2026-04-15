@@ -34,10 +34,9 @@ Module ButtonClicks
         node.Text = frm.TB_Prefix.Text & oNodeText & frm.TB_Suffix.Text
     End Sub
 
-    Sub TestButtonClickHandler(sender As Object, e As EventArgs, Optional frm As AssemblyCopyToolForm = Nothing, Optional rootAssemblyObject As AssemblyCopyObject = Nothing, Optional invApp As Inventor.Application = Nothing)
+    Sub TestButtonClickHandler(sender As Object, e As EventArgs, Optional frm As AssemblyCopyToolForm = Nothing, Optional rootAssemblyObject As InvtAssembly = Nothing, Optional invApp As Inventor.Application = Nothing)
         'NameFirstOccurrence(invApp)
         ReadSelectionAttributes(invApp)
-
     End Sub
 
 

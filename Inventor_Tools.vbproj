@@ -10,10 +10,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="OldCode\AssemblyCopyObject\AssemblyCopyObject.vb" />
+    <Compile Remove="OldCode\AssemblyCopyObject\Copy_Replace_Functions.vb" />
     <Compile Remove="OldCode\CopyToolFunctions.vb" />
+    <Compile Remove="OldCode\FrameSkeltonFunctions.vb" />
     <Compile Remove="OldCode\InventorFunctions.vb" />
     <Compile Remove="OldCode\InvtAssemblyObj.vb" />
     <Compile Remove="OldCode\InvtComponentObj.vb" />
+    <Compile Remove="OldCode\InvtFrameObj.vb" />
+    <Compile Remove="OldCode\InvtPartObj.vb" />
     <Compile Remove="OldCode\OldFunctions.vb" />
   </ItemGroup>
 
@@ -28,10 +33,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="OldCode\AssemblyCopyObject\AssemblyCopyObject.vb" />
+    <None Include="OldCode\AssemblyCopyObject\Copy_Replace_Functions.vb" />
     <None Include="OldCode\CopyToolFunctions.vb" />
+    <None Include="OldCode\FrameSkeltonFunctions.vb" />
     <None Include="OldCode\InventorFunctions.vb" />
     <None Include="OldCode\InvtAssemblyObj.vb" />
     <None Include="OldCode\InvtComponentObj.vb" />
+    <None Include="OldCode\InvtFrameObj.vb" />
+    <None Include="OldCode\InvtPartObj.vb" />
     <None Include="OldCode\OldFunctions.vb" />
   </ItemGroup>
 

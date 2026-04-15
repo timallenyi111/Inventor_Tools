@@ -52,7 +52,7 @@ Module CopyAndReplaceFunctions
         ReplaceComponents(rootAssemblyObject, newRootAsmDoc.ComponentDefinition.Occurrences)
         _form.Log("*****REPLACE COMPLETE*****", numLinesBefore:=3)
 
-        newRootAsmDoc.Save()
+        newRootAsmDoc.Save2()
 
         MessageBox.Show("Copy Complete")
 

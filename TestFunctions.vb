@@ -9,7 +9,7 @@ Imports Inventor
 
 Module TestFunctions
 
-    Sub LoadOccurrenceProxy(ByVal _invApp As Inventor.Application, ByRef rootAssembly As AssemblyCopyObject, ByVal form As AssemblyCopyToolForm)
+    Sub LoadOccurrenceProxy(ByVal _invApp As Inventor.Application, ByRef rootAssembly As InvtAssembly, ByVal form As AssemblyCopyToolForm)
         Dim activeDoc As Inventor.AssemblyDocument = _invApp.ActiveDocument
         Dim highlightSet As Inventor.HighlightSet = _invApp.ActiveDocument.CreateHighlightSet()
 
@@ -80,12 +80,12 @@ Module TestFunctions
     End Sub
 
     Sub WriteObjectSubType(ByRef component As Object, form As AssemblyCopyToolForm)
-        If TypeOf component Is InvtPartObj Then
-            Dim partObj As InvtPartObj = component
+        If TypeOf component Is InvtPart Then
+            Dim partObj As InvtPart = component
             form.LB_TestLabel.Text = "Part Object SubType: " & partObj.SubType
 
-        ElseIf TypeOf component Is AssemblyCopyObject Then
-            Dim asmCopyObj As AssemblyCopyObject = component
+        ElseIf TypeOf component Is InvtAssembly Then
+            Dim asmCopyObj As InvtAssembly = component
             form.LB_TestLabel.Text = "Assembly Object SubType: " & asmCopyObj.SubType
         End If
     End Sub

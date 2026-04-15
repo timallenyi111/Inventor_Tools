@@ -2,56 +2,59 @@
 Imports Inventor
 
 Friend Class InvtAssembly
-    Private prtList As List(Of InvtPart)
-    Private subAsyList As List(Of InvtAssembly)
-    Private subFrameList As List(Of InvtFrame)
-    Private oAsyName As String
+    Private _prtList As List(Of InvtPart)
+    Private _subAsyList As List(Of InvtAssembly)
+    Private _subFrameList As List(Of InvtFrame)
+    Private _oAsyName As String
     Private _nAsyName As String
-    Private oFullFileName As String
+    Private _oFullFileName As String
     Private _nFullFileName As String
     Private _nRootDirectory As String
-    Private oAsmDoc As AssemblyDocument
+    Private _oAsmDoc As AssemblyDocument
     Private _treeNode As TreeNode
-    Private oCompOcc As ComponentOccurrence
+    Private _oCompOcc As ComponentOccurrence
     Private _subType As String
-    Private hltSet As HighlightSet
+    'Private _hltSet As HighlightSet
     Private ReadOnly duplicateOccurrenceList As List(Of ComponentOccurrence)
     Private ReadOnly _duplicateOccIndexList As List(Of Integer)
     Private _copyEnabled As Boolean = True
     Private _occurrenceIndex As Integer
     Private _containsFrame As Boolean = False
+    Private _isBoltedConnection As Boolean = False
+    Private _parentName As String
 
     ''' <summary>
-    ''' automatically sets up the original file name, assembly name, and stores the assembly document. 
-    ''' If an occurrence is passed it will also store that, but if not it assumes this is the root assembly and there won't be an occurrence associated with it.
+    ''' automatically sets up the original file name, assembly name, stores the assembly document. 
+    ''' If an occurrence is passed it will also store that, but if not it assumes this is the root assembly and there won't be an occurrence associated with it | 
+    ''' Checks if it is a bolted connection and if so performs the propery root directory operations    
     ''' </summary>
     ''' <param name="Asydoc"></param>
     ''' <param name="AsyOcc"></param>
     Public Sub New(ByRef Asydoc As Inventor.AssemblyDocument, ByRef occurrenceIndex As Integer, ByRef nRootDirectory As String,
                    Optional ByRef AsyOcc As ComponentOccurrence = Nothing)
-        oFullFileName = Asydoc.FullFileName
-        oAsmDoc = Asydoc
-        oAsyName = GetAssemblyName(oFullFileName)
+        _oFullFileName = Asydoc.FullFileName
+        _oAsmDoc = Asydoc
+        _oAsyName = GetAssemblyName(_oFullFileName)
         _occurrenceIndex = occurrenceIndex
         _nRootDirectory = nRootDirectory
 
         If AsyOcc Is Nothing Then
             'This is a root assembly so it won't have an occurrence associated with it            
         Else
-
-            oCompOcc = AsyOcc
+            _oCompOcc = AsyOcc
+            CheckIfBoltedConnection()
         End If
 
         'initialize all of the applicable lists
-        prtList = New List(Of InvtPart)
-        subAsyList = New List(Of InvtAssembly)
-        subFrameList = New List(Of InvtFrame)
+        _prtList = New List(Of InvtPart)
+        _subAsyList = New List(Of InvtAssembly)
+        _subFrameList = New List(Of InvtFrame)
         duplicateOccurrenceList = New List(Of Inventor.ComponentOccurrence)
         _duplicateOccIndexList = New List(Of Integer)
     End Sub
 
 
-#Region "Private Functions"
+#Region "Private Subs/Functions"
     ''' <summary>
     ''' updates the tree node text with the new name
     ''' </summary>
@@ -86,6 +89,31 @@ Friend Class InvtAssembly
         Return asyName
     End Function
 
+    ''' <summary>
+    ''' Checks if the occurrence is a bolted connection and sets the _isBoltedConnection flag | 
+    ''' Also performs the necessary root directory 
+    ''' </summary>
+    ''' <returns></returns>
+    Private Sub CheckIfBoltedConnection()
+        If _oCompOcc.AttributeSets.Count > 0 Then
+            For Each attSet As AttributeSet In _oCompOcc.AttributeSets
+                If attSet.Name = "FDesign" Then
+                    For Each atri As Inventor.Attribute In attSet
+                        If VarType(atri.Value) = vbString Then
+                            Dim atriValue As String = atri.Value
+                            If atriValue.IndexOf("CABoltCon") >= 0 Then
+                                _isBoltedConnection = True
+                                Exit Sub
+                            End If
+                        End If
+                    Next
+                End If
+            Next
+        End If
+    End Sub
+
+
+
 #End Region
 
 #Region "Public Functions/Subs"
@@ -97,7 +125,7 @@ Friend Class InvtAssembly
     ''' <param name="occurrenceIndex"></param>
     ''' <returns></returns>
     Function CheckForDuplicatePart(ByRef partOcc As ComponentOccurrence, ByRef occurrenceIndex As Integer) As Boolean
-        For Each prtObj As InvtPart In prtList
+        For Each prtObj As InvtPart In _prtList
             If prtObj.OriginalFullFileName = partOcc.Definition.Document.FullFileName Then
                 'this is a duplicate occurrence, so add it to the list of duplicates for this part object and return true
                 prtObj.DuplicateOccurrences.Add(partOcc)
@@ -109,7 +137,7 @@ Friend Class InvtAssembly
     End Function
 
     Function CheckForDuplicateAssembly(ByRef asyOcc As ComponentOccurrence, ByRef occurrenceIndex As Integer) As Boolean
-        For Each asyObj As InvtAssembly In subAsyList
+        For Each asyObj As InvtAssembly In _subAsyList
             If asyObj.OriginalFullFileName = asyOcc.Definition.Document.FullFileName Then
                 'this is a duplicate occurrence, so add it to the list of duplicates for this assembly object and return true                
                 asyObj.DuplicateOccurrences.Add(asyOcc)
@@ -121,15 +149,15 @@ Friend Class InvtAssembly
     End Function
 
     Sub AddPartToList(ByRef part As InvtPart)
-        prtList.Add(part)
+        _prtList.Add(part)
     End Sub
 
     Sub AddSubAssemblyToList(ByRef asy As InvtAssembly)
-        subAsyList.Add(asy)
+        _subAsyList.Add(asy)
     End Sub
 
     Sub AddSubFrameToList(ByRef frame As InvtFrame)
-        subFrameList.Add(frame)
+        _subFrameList.Add(frame)
         _containsFrame = True
     End Sub
 
@@ -151,25 +179,25 @@ Friend Class InvtAssembly
     ''' <returns></returns>
     ReadOnly Property OriginalName As String
         Get
-            Return oAsyName
+            Return _oAsyName
         End Get
     End Property
 
     ReadOnly Property OriginalFullFileName As String
         Get
-            Return oFullFileName
+            Return _oFullFileName
         End Get
     End Property
 
     ReadOnly Property OriginalAsmDocument As AssemblyDocument
         Get
-            Return oAsmDoc
+            Return _oAsmDoc
         End Get
     End Property
 
     ReadOnly Property OriginalComponentOccurrence As ComponentOccurrence
         Get
-            Return oCompOcc
+            Return _oCompOcc
         End Get
     End Property
 
@@ -188,6 +216,9 @@ Friend Class InvtAssembly
         End Get
         Set(value As TreeNode)
             _treeNode = value
+            If _isBoltedConnection Then
+                _treeNode.ForeColor = System.Drawing.Color.Gray
+            End If
         End Set
     End Property
 
@@ -197,7 +228,11 @@ Friend Class InvtAssembly
     ''' <returns></returns>
     ReadOnly Property NewFullFileName As String
         Get
-            Return _nRootDirectory & _nAsyName & ".iam"
+            If _isBoltedConnection Then
+                Return _nRootDirectory & _treeNode.Parent.Text & "\Design Accelerator\" & _nAsyName & ".iam"
+            Else
+                Return _nRootDirectory & _nAsyName & ".iam"
+            End If
         End Get
     End Property
     ReadOnly Property NewRootDirectory As String
@@ -217,19 +252,19 @@ Friend Class InvtAssembly
 
     ReadOnly Property PartList As List(Of InvtPart)
         Get
-            Return prtList
+            Return _prtList
         End Get
     End Property
 
     ReadOnly Property AssemblyList As List(Of InvtAssembly)
         Get
-            Return subAsyList
+            Return _subAsyList
         End Get
     End Property
 
     ReadOnly Property FrameList As List(Of InvtFrame)
         Get
-            Return subFrameList
+            Return _subFrameList
         End Get
     End Property
 
@@ -239,11 +274,11 @@ Friend Class InvtAssembly
         End Get
     End Property
 
-    ReadOnly Property HighlightSet As HighlightSet
-        Get
-            Return hltSet
-        End Get
-    End Property
+    'ReadOnly Property HighlightSet As HighlightSet
+    '    Get
+    '        Return _hltSet
+    '    End Get
+    'End Property
 
     Property CopyEnabled As Boolean
         Get

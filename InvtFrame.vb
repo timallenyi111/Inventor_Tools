@@ -149,11 +149,11 @@ Friend Class InvtFrame
         End Get
     End Property
 
-    ReadOnly Property HighlightSet As HighlightSet
-        Get
-            Return _frameAssemblyObject.HighlightSet
-        End Get
-    End Property
+    'ReadOnly Property HighlightSet As HighlightSet
+    '    Get
+    '        Return _frameAssemblyObject.HighlightSet
+    '    End Get
+    'End Property
 
     Property CopyEnabled As Boolean
         Get
